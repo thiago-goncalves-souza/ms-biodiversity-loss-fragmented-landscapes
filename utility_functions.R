@@ -20,6 +20,7 @@
 #   - extract_model_results: Function to extract results from meta-analysis models 
 #   - overall_rma_results: Function to extract relevant results from the model summary of the rma function
 #   - extract_glmmTMB_summary: extract the glmmTMB results from multiple models # it's a bit different from the previous one
+#   - extract_confint: Extract confidence intervals from lm models in the moderators test
 #
 # Reference: Cade, B.S. (2015). Ecology 96, https://doi.org/10.1890/14-1639.1	
 #
@@ -369,3 +370,43 @@ lm_results <- function(..., row_index = 2) {
   
   return(results_df)
 }
+
+### Extract confidence intervals from lm models in the moderators test
+
+extract_confint <- function(..., row_index = 2) {
+  models <- list(...)
+  
+  # Extract the diversity types (assuming the naming convention of mod1, mod2, etc.)
+  included_moderators <- sapply(substitute(list(...))[-1], deparse)
+  
+  # Create an empty list to store results
+  results_list <- list()
+  
+  # Function to extract confidence intervals from lm model
+  extract_confidence_intervals <- function(model, included_moderator, row_index) {
+    conf_intervals <- confint(model)
+    
+    # Extract the specific confidence intervals, excluding intercept
+    lower_ci <- conf_intervals[row_index, 1]
+    upper_ci <- conf_intervals[row_index, 2]
+    
+    # Combine into a data frame
+    data.frame(
+      Included_moderator = included_moderator,
+      Lower_CI = lower_ci,
+      Upper_CI = upper_ci
+    )
+  }
+  
+  # Loop through each model and extract relevant confidence intervals
+  for (i in seq_along(models)) {
+    results_list[[i]] <- extract_confidence_intervals(models[[i]], included_moderators[i], row_index)
+  }
+  
+  # Combine all results into a single data frame
+  results_df <- do.call(rbind, results_list)
+  
+  return(results_df)
+}
+
+
