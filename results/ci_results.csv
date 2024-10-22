@@ -1,0 +1,73 @@
+"","Diversity_type","moderator","Lower_CI","Upper_CI"
+"1","Alpha (all pairs)","Habitat amount",-0.000699639703076372,0.00166407578646943
+"2","Alpha (all pairs)","Number of pairs",-0.000401980837746399,0.000198826129302646
+"3","Alpha (all pairs)","Time after fragmentation",-0.001498825174727,0.00110772401600852
+"4","Alpha (all pairs)","Continent",-0.00259420133852791,-0.000301348905313734
+"5","Beta (all pairs)","Habitat amount",-0.000278002276337121,0.000438938520169056
+"6","Beta (all pairs)","Number of pairs",-0.000195874444107982,-3.11462950501241e-05
+"7","Beta (all pairs)","Time after fragmentation",-8.9612386568686e-05,0.000670977305513262
+"8","Beta (all pairs)","Continent",-0.000526217559076438,0.000219216928406623
+"9","Gamma (all pairs)","Habitat amount",-0.00131281200838908,0.00313552519349564
+"10","Gamma (all pairs)","Number of pairs",-0.000607051168510207,0.000531002947281133
+"11","Gamma (all pairs)","Time after fragmentation",-0.00179809319275862,0.00309397028333935
+"12","Gamma (all pairs)","Continent",-0.00431845422312332,0.000163304600251798
+"13","Alpha (all pairs) - q = 0","Habitat amount",-0.00119903745361397,0.00171234542286284
+"14","Alpha (all pairs) - q = 0","Number of pairs",-0.000603301363765913,0.000119517160275166
+"15","Alpha (all pairs) - q = 0","Time after fragmentation",-0.00106298864108377,0.0021063536352493
+"16","Alpha (all pairs) - q = 0","Continent",-0.00306815022333063,-0.000232207519282544
+"17","Beta (all pairs) - q = 0","Habitat amount",-0.000929562453834161,0.00149277525918949
+"18","Beta (all pairs) - q = 0","Number of pairs",5.86633487321759e-05,0.00062963069536721
+"19","Beta (all pairs) - q = 0","Time after fragmentation",-0.00102284150104421,0.00162638791614219
+"20","Beta (all pairs) - q = 0","Continent",-0.000161201904729648,0.00227716890924833
+"21","Gamma (all pairs) - q = 0","Habitat amount",-0.000708279382354852,0.00116382056238181
+"22","Gamma (all pairs) - q = 0","Number of pairs",-0.000323612843361746,0.000150352380214982
+"23","Gamma (all pairs) - q = 0","Time after fragmentation",-0.000474889519667824,0.00154626445088841
+"24","Gamma (all pairs) - q = 0","Continent",-0.00168352582991097,0.00021795204510724
+"25","Alpha (all pairs) - q = 2","Habitat amount",-0.000866918187804358,0.000573673875003166
+"26","Alpha (all pairs) - q = 2","Number of pairs",-0.00022841020255255,0.00013745610512482
+"27","Alpha (all pairs) - q = 2","Time after fragmentation",-0.000838536738858923,0.000740269907994371
+"28","Alpha (all pairs) - q = 2","Continent",-0.00110674300010055,0.000384757411684164
+"29","Beta (all pairs) - q = 2","Habitat amount",-0.00143424377405194,0.000418874603497931
+"30","Beta (all pairs) - q = 2","Number of pairs",3.6707498359264e-05,0.000481908826081982
+"31","Beta (all pairs) - q = 2","Time after fragmentation",-0.00115516223896396,0.000904995466367923
+"32","Beta (all pairs) - q = 2","Continent",-0.00130861449764363,0.000652674266580959
+"33","Gamma (all pairs) - q = 2","Habitat amount",-0.00103806250796395,0.000738389338036192
+"34","Gamma (all pairs) - q = 2","Number of pairs",-0.000325246911418797,0.000121792906338534
+"35","Gamma (all pairs) - q = 2","Time after fragmentation",-0.000673601788800816,0.00126175555277104
+"36","Gamma (all pairs) - q = 2","Continent",-0.00204164317728801,-0.00037304089433143
+"37","Alpha (nearest pairs)","Habitat amount",-0.000253270417552036,9.03937774919141e-05
+"38","Alpha (nearest pairs)","Number of pairs",-0.000110605797399495,7.10517470121725e-05
+"39","Alpha (nearest pairs)","Time after fragmentation",-0.000272872143950566,0.000103404725867465
+"40","Alpha (nearest pairs)","Continent",-0.000223419188380538,0.000139989564229932
+"41","Beta (nearest pairs)","Habitat amount",-0.000293280027537632,0.000167004171589136
+"42","Beta (nearest pairs)","Number of pairs",-1.1883796817501e-05,0.000219289163163653
+"43","Beta (nearest pairs)","Time after fragmentation",-0.000272345464324202,0.000233033828945846
+"44","Beta (nearest pairs)","Continent",-0.000141443544182118,0.000337876230463433
+"45","Gamma (nearest pairs)","Habitat amount",-0.104384973262764,0.363386654662153
+"46","Gamma (nearest pairs)","Number of pairs",-0.0856408735877482,0.162085722905548
+"47","Gamma (nearest pairs)","Time after fragmentation",-0.183292533443506,0.334778703332644
+"48","Gamma (nearest pairs)","Continent",-0.202411067623581,0.29507976979517
+"49","Alpha (nearest pairs) - q = 0","Habitat amount",-0.00103962871084105,0.00164783398884437
+"50","Alpha (nearest pairs) - q = 0","Number of pairs",-0.00104962146016653,0.000336656672429088
+"51","Alpha (nearest pairs) - q = 0","Time after fragmentation",-0.00113552635961463,0.00180322067597008
+"52","Alpha (nearest pairs) - q = 0","Continent",-0.00282926228506786,-0.00020636815711114
+"53","Beta (nearest pairs) - q = 0","Habitat amount",-0.000647137910919783,0.0017286576149999
+"54","Beta (nearest pairs) - q = 0","Number of pairs",0.000120981062517365,0.0012809397653296
+"55","Beta (nearest pairs) - q = 0","Time after fragmentation",-0.000944772668832482,0.00167283814468157
+"56","Beta (nearest pairs) - q = 0","Continent",-0.000981920022978818,0.001528640839629
+"57","Gamma (nearest pairs) - q = 0","Habitat amount",-0.000949523779392929,0.00139666923036873
+"58","Gamma (nearest pairs) - q = 0","Number of pairs",-0.000748533607929908,0.000475764998366474
+"59","Gamma (nearest pairs) - q = 0","Time after fragmentation",-0.000459181265874873,0.00205307895658114
+"60","Gamma (nearest pairs) - q = 0","Continent",-0.00223838652986717,0.000112709893439818
+"61","Alpha (nearest pairs) - q = 2","Habitat amount",-0.000780296576940637,0.000498938915225515
+"62","Alpha (nearest pairs) - q = 2","Number of pairs",-0.000408064586679195,0.00025996102133332
+"63","Alpha (nearest pairs) - q = 2","Time after fragmentation",-0.000754651026570926,0.000647727831181578
+"64","Alpha (nearest pairs) - q = 2","Continent",-0.000985544628532326,0.000339148275320793
+"65","Beta (nearest pairs) - q = 2","Habitat amount",-0.00164074566176224,0.00025389605523881
+"66","Beta (nearest pairs) - q = 2","Number of pairs",-0.000280079142951567,0.000728428625131109
+"67","Beta (nearest pairs) - q = 2","Time after fragmentation",-0.00109715611330688,0.00103895376685785
+"68","Beta (nearest pairs) - q = 2","Continent",-0.00154501550001653,0.000466478805976052
+"69","Gamma (nearest pairs) - q = 2","Habitat amount",-0.00113450447211214,0.000758019619481092
+"70","Gamma (nearest pairs) - q = 2","Number of pairs",-0.000764220634427952,0.000207841653866454
+"71","Gamma (nearest pairs) - q = 2","Time after fragmentation",-0.000787344809726956,0.00128009721395443
+"72","Gamma (nearest pairs) - q = 2","Continent",-0.0020429200929291,-0.000214131644632935
