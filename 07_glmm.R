@@ -241,9 +241,6 @@ mod_hac_div2_alpha_res <- simulateResiduals(fittedModel = mod_hac_div2_alpha, pl
 plot(mod_hac_div2_alpha_res) # residuals normally distributed
 testDispersion(mod_hac_div2_alpha_res) # no overdispersion
 
-summary(mod_hac_div2_alpha) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_alpha$effort_diff_cent <- scale(log(moders_div2_alpha$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -255,9 +252,6 @@ plot(mod_eff_div2_alpha_res) # residuals normally distributedm with heterogeneou
 testDispersion(mod_eff_div2_alpha_res) # no overdispersion
 
 
-summary(mod_eff_div2_alpha) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_alpha <- lm(ha_slope_div2_alpha ~ time_since_fragmentation, data = moders_div2_alpha)
@@ -265,7 +259,6 @@ mod_time_div2_alpha_res <- simulateResiduals(fittedModel = mod_time_div2_alpha, 
 plot(mod_time_div2_alpha_res) # residuals normally distributed
 testDispersion(mod_hac_div2_alpha_res) # no overdispersion
 
-summary(mod_time_div2_alpha) # report results
 
 # continent 
 
@@ -274,14 +267,15 @@ mod_cont_div2_alpha_res <- simulateResiduals(fittedModel = mod_cont_div2_alpha, 
 plot(mod_cont_div2_alpha_res) # residuals normally distributed
 testDispersion(mod_cont_div2_alpha_res) # no overdispersion
 
-summary(mod_cont_div2_alpha)  # report results
-
 
 ## save the results to export later
 
 lm_results(mod_hac_div2_alpha, mod_eff_div2_alpha, mod_time_div2_alpha, mod_cont_div2_alpha) %>% 
   dplyr::mutate(Diversity_type = "Alpha (all pairs)", .before = "Included_moderator") -> moder_results_div2_alpha
 
+extract_confint(mod_hac_div2_alpha, mod_eff_div2_alpha, mod_time_div2_alpha, mod_cont_div2_alpha) %>% 
+  dplyr::mutate(Diversity_type = "Alpha (all pairs)", .before = "Included_moderator") -> ci_results_div2_alpha
+  
 
 ## Effects on Beta-diversity ---------------------------------------------------
 
@@ -357,9 +351,6 @@ mod_hac_div2_beta_res <- simulateResiduals(fittedModel = mod_hac_div2_beta, plot
 plot(mod_hac_div2_beta_res) # residuals normally distributed
 testDispersion(mod_hac_div2_beta_res) # no overdispersion
 
-summary(mod_hac_div2_beta) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_beta$effort_diff_cent <- scale(log(moders_div2_beta$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -370,10 +361,6 @@ mod_eff_div2_beta_res <- simulateResiduals(fittedModel = mod_eff_div2_beta, plot
 plot(mod_eff_div2_beta_res) # residuals normally distributed
 testDispersion(mod_eff_div2_beta_res) # no overdispersion
 
-
-summary(mod_eff_div2_beta) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_beta <- lm(ha_slope_div2_beta ~ time_since_fragmentation, data = moders_div2_beta)
@@ -381,7 +368,6 @@ mod_time_div2_beta_res <- simulateResiduals(fittedModel = mod_time_div2_beta, pl
 plot(mod_time_div2_beta_res) # residuals normally distributed
 testDispersion(mod_hac_div2_beta_res) # no overdispersion
 
-summary(mod_time_div2_beta) # report results
 
 # continent 
 
@@ -390,14 +376,13 @@ mod_cont_div2_beta_res <- simulateResiduals(fittedModel = mod_cont_div2_beta, pl
 plot(mod_cont_div2_beta_res) # residuals normally distributed
 testDispersion(mod_cont_div2_beta_res) # no overdispersion
 
-summary(mod_cont_div2_beta)  # report results
-
-
 ## save the results to export 
 
 lm_results(mod_hac_div2_beta, mod_eff_div2_beta, mod_time_div2_beta, mod_cont_div2_beta) %>% 
   dplyr::mutate(Diversity_type = "Beta (all pairs)", .before = "Included_moderator") -> moder_results_div2_beta
 
+extract_confint(mod_hac_div2_beta, mod_eff_div2_beta, mod_time_div2_beta, mod_cont_div2_beta) %>% 
+  dplyr::mutate(Diversity_type = "Beta (all pairs)", .before = "Included_moderator") -> ci_results_div2_beta
 
 ## Effects on Gamma-Diversity  ----------------------------------------------------
 
@@ -482,9 +467,6 @@ mod_hac_div2_gamma_res <- simulateResiduals(fittedModel = mod_hac_div2_gamma, pl
 plot(mod_hac_div2_gamma_res) # residuals normally distributed
 testDispersion(mod_hac_div2_gamma_res) # no overdispersion
 
-summary(mod_hac_div2_gamma) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_gamma$effort_diff_cent <- scale(log(moders_div2_gamma$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -495,18 +477,12 @@ mod_eff_div2_gamma_res <- simulateResiduals(fittedModel = mod_eff_div2_gamma, pl
 plot(mod_eff_div2_gamma_res) # residuals normally distributed
 testDispersion(mod_eff_div2_gamma_res) # no overdispersion
 
-
-summary(mod_eff_div2_gamma) # report results
-
-
 # time since fragmentation
 
 mod_time_div2_gamma <- lm(ha_slope_div2_gamma ~ time_since_fragmentation, data = moders_div2_gamma)
 mod_time_div2_gamma_res <- simulateResiduals(fittedModel = mod_time_div2_gamma, plot = F)
 plot(mod_time_div2_gamma_res) # residuals normally distributed
 testDispersion(mod_hac_div2_gamma_res) # no overdispersion
-
-summary(mod_time_div2_gamma) # report results
 
 # continent 
 
@@ -515,13 +491,14 @@ mod_cont_div2_gamma_res <- simulateResiduals(fittedModel = mod_cont_div2_gamma, 
 plot(mod_cont_div2_gamma_res) # residuals normally distributed
 testDispersion(mod_cont_div2_gamma_res) # no overdispersion
 
-summary(mod_cont_div2_gamma)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_gamma, mod_eff_div2_gamma, mod_time_div2_gamma, mod_cont_div2_gamma) %>% 
   dplyr::mutate(Diversity_type = "Gamma (all pairs)", .before = "Included_moderator") -> moder_results_div2_gamma
+
+
+extract_confint(mod_hac_div2_gamma, mod_eff_div2_gamma, mod_time_div2_gamma, mod_cont_div2_gamma) %>% 
+  dplyr::mutate(Diversity_type = "Gamma (all pairs)", .before = "Included_moderator") -> ci_results_div2_gamma
 
 
 ### GLMMs ----------------------------------------------------------------------
@@ -612,9 +589,6 @@ mod_hac_div2_cl_alpha_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_alp
 plot(mod_hac_div2_cl_alpha_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_alpha_res) # no overdispersion
 
-summary(mod_hac_div2_cl_alpha) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_alpha$effort_diff_cent <- scale(log(moders_div2_cl_alpha$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -625,17 +599,12 @@ mod_eff_div2_cl_alpha_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_alp
 plot(mod_eff_div2_cl_alpha_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_alpha_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_alpha) # report results # 
-
 # time since fragmentation
 
 mod_time_div2_cl_alpha <- lm(ha_slope_div2_cl_alpha ~ time_since_fragmentation, data = moders_div2_cl_alpha)
 mod_time_div2_cl_alpha_res <- simulateResiduals(fittedModel = mod_time_div2_cl_alpha, plot = F)
 plot(mod_time_div2_cl_alpha_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_alpha_res) # no overdispersion
-
-summary(mod_time_div2_cl_alpha) # report results
 
 # continent 
 
@@ -644,14 +613,13 @@ mod_cont_div2_cl_alpha_res <- simulateResiduals(fittedModel = mod_cont_div2_cl_a
 plot(mod_cont_div2_cl_alpha_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_alpha_res) # no overdispersion
 
-summary(mod_cont_div2_cl_alpha)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_alpha, mod_eff_div2_cl_alpha, mod_time_div2_cl_alpha, mod_cont_div2_cl_alpha) %>% 
   dplyr::mutate(Diversity_type = "Alpha (nearest pairs)", .before = "Included_moderator") -> moder_results_div2_cl_alpha
 
+extract_confint(mod_hac_div2_cl_alpha, mod_eff_div2_cl_alpha, mod_time_div2_cl_alpha, mod_cont_div2_cl_alpha) %>% 
+  dplyr::mutate(Diversity_type = "Alpha (nearest pairs)", .before = "Included_moderator") -> ci_results_div2_cl_alpha
 
 ## Effects on Beta-Diversity --------------------------------------------------
 
@@ -721,9 +689,6 @@ mod_hac_div2_cl_beta_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_beta
 plot(mod_hac_div2_cl_beta_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_beta_res) # no overdispersion
 
-summary(mod_hac_div2_cl_beta) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_beta$effort_diff_cent <- scale(log(moders_div2_cl_beta$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -734,17 +699,12 @@ mod_eff_div2_cl_beta_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_beta
 plot(mod_eff_div2_cl_beta_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_beta_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_beta) # report results # 
-
 # time since fragmentation
 
 mod_time_div2_cl_beta <- lm(ha_slope_div2_cl_beta ~ time_since_fragmentation, data = moders_div2_cl_beta)
 mod_time_div2_cl_beta_res <- simulateResiduals(fittedModel = mod_time_div2_cl_beta, plot = F)
 plot(mod_time_div2_cl_beta_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_beta_res) # no overdispersion
-
-summary(mod_time_div2_cl_beta) # report results
 
 # continent 
 
@@ -753,12 +713,14 @@ mod_cont_div2_cl_beta_res <- simulateResiduals(fittedModel = mod_cont_div2_cl_be
 plot(mod_cont_div2_cl_beta_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_beta_res) # no overdispersion
 
-summary(mod_cont_div2_cl_beta)  # report results
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_beta, mod_eff_div2_cl_beta, mod_time_div2_cl_beta, mod_cont_div2_cl_beta) %>% 
   dplyr::mutate(Diversity_type = "Beta (nearest pairs)", .before = "Included_moderator") -> moder_results_div2_cl_beta
+
+
+extract_confint(mod_hac_div2_cl_beta, mod_eff_div2_cl_beta, mod_time_div2_cl_beta, mod_cont_div2_cl_beta) %>% 
+  dplyr::mutate(Diversity_type = "Beta (nearest pairs)", .before = "Included_moderator") -> ci_results_div2_cl_beta
 
 ## Effects on Gamma-Diversity --------------------------------------------------
 
@@ -844,8 +806,7 @@ mod_eff_div2_cl_gamma_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_gam
 plot(mod_eff_div2_cl_gamma_res) # residuals normally distributed and heterogeneous variance 
 testDispersion(mod_eff_div2_cl_gamma_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_gamma) # report results (note: this model does not have homogeneous variance)
+# note: this model does not have homogeneous variance
 
 # time since fragmentation
 
@@ -854,8 +815,6 @@ mod_time_div2_cl_gamma_res <- simulateResiduals(fittedModel = mod_time_div2_cl_g
 plot(mod_time_div2_cl_gamma_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_gamma_res) # no overdispersion
 
-summary(mod_time_div2_cl_gamma) # report results
-
 # continent 
 
 mod_cont_div2_cl_gamma <- lm(ha_slope_div2_cl_gamma ~ continent_cat, data = moders_div2_cl_gamma)
@@ -863,12 +822,14 @@ mod_cont_div2_cl_gamma_res <- simulateResiduals(fittedModel = mod_cont_div2_cl_g
 plot(mod_cont_div2_cl_gamma_res) # residuals not normally distributed
 testDispersion(mod_cont_div2_cl_gamma_res) # no overdispersion
 
-summary(mod_cont_div2_cl_gamma)  # report results  (note: this model does not have normal distribution)
-
+# note: this model does not have normal distribution
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_gamma, mod_eff_div2_cl_gamma, mod_time_div2_cl_gamma, mod_cont_div2_cl_gamma) %>% 
   dplyr::mutate(Diversity_type = "Gamma (nearest pairs)", .before = "Included_moderator") -> moder_results_div2_cl_gamma
+
+extract_confint(mod_hac_div2_cl_gamma, mod_eff_div2_cl_gamma, mod_time_div2_cl_gamma, mod_cont_div2_cl_gamma) %>% 
+  dplyr::mutate(Diversity_type = "Gamma (nearest pairs)", .before = "Included_moderator") -> ci_results_div2_cl_gamma
 
 
 ### GLMMs ----------------------------------------------------------------------
@@ -950,9 +911,6 @@ mod_hac_div2_alpha_r0_res <- simulateResiduals(fittedModel = mod_hac_div2_alpha_
 plot(mod_hac_div2_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_alpha_r0_res) # no overdispersion
 
-summary(mod_hac_div2_alpha_r0) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_alpha_r0$effort_diff_cent <- scale(log(moders_div2_alpha_r0$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -963,18 +921,12 @@ mod_eff_div2_alpha_r0_res <- simulateResiduals(fittedModel = mod_eff_div2_alpha_
 plot(mod_eff_div2_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_eff_div2_alpha_r0_res) # no overdispersion
 
-
-summary(mod_eff_div2_alpha_r0) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_alpha_r0 <- lm(ha_slope_div2_alpha_r0 ~ time_since_fragmentation, data = moders_div2_alpha_r0)
 mod_time_div2_alpha_r0_res <- simulateResiduals(fittedModel = mod_time_div2_alpha_r0, plot = F)
 plot(mod_time_div2_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_alpha_r0_res) # no overdispersion
-
-summary(mod_time_div2_alpha_r0) # report results
 
 # continent 
 
@@ -983,12 +935,13 @@ mod_cont_div2_alpha_r0_res <- simulateResiduals(fittedModel = mod_cont_div2_alph
 plot(mod_cont_div2_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_cont_div2_alpha_r0_res) # no overdispersion
 
-summary(mod_cont_div2_alpha_r0)  # report results
-
-
 ## save the results to export later
 lm_results(mod_hac_div2_alpha_r0, mod_eff_div2_alpha_r0, mod_time_div2_alpha_r0, mod_cont_div2_alpha_r0) %>% 
   dplyr::mutate(Diversity_type = "Alpha (all pairs) - q = 0", .before = "Included_moderator") -> moder_results_div2_alpha_r0
+
+extract_confint(mod_hac_div2_alpha_r0, mod_eff_div2_alpha_r0, mod_time_div2_alpha_r0, mod_cont_div2_alpha_r0) %>% 
+  dplyr::mutate(Diversity_type = "Alpha (all pairs) - q = 0", .before = "Included_moderator") -> ci_results_div2_alpha_r0
+
 
 ## Effects on Beta-Diversity (q = 0) -------------------------------------------
 
@@ -1067,17 +1020,12 @@ mod_eff_div2_beta_r0_res <- simulateResiduals(fittedModel = mod_eff_div2_beta_r0
 plot(mod_eff_div2_beta_r0_res) # residuals normally distributed
 testDispersion(mod_eff_div2_beta_r0_res) # no overdispersion
 
-summary(mod_eff_div2_beta_r0) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_beta_r0 <- lm(ha_slope_div2_beta_r0 ~ time_since_fragmentation, data = moders_div2_beta_r0)
 mod_time_div2_beta_r0_res <- simulateResiduals(fittedModel = mod_time_div2_beta_r0, plot = F)
 plot(mod_time_div2_beta_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_beta_r0_res) # no overdispersion
-
-summary(mod_time_div2_beta_r0) # report results
 
 # continent 
 
@@ -1086,13 +1034,13 @@ mod_cont_div2_beta_r0_res <- simulateResiduals(fittedModel = mod_cont_div2_beta_
 plot(mod_cont_div2_beta_r0_res) # residuals normally distributed
 testDispersion(mod_cont_div2_beta_r0_res) # no overdispersion
 
-summary(mod_cont_div2_beta_r0)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_beta_r0, mod_eff_div2_beta_r0, mod_time_div2_beta_r0, mod_cont_div2_beta_r0) %>% 
   dplyr::mutate(Diversity_type = "Beta (all pairs) - q = 0", .before = "Included_moderator") -> moder_results_div2_beta_r0
+
+extract_confint(mod_hac_div2_beta_r0, mod_eff_div2_beta_r0, mod_time_div2_beta_r0, mod_cont_div2_beta_r0) %>% 
+  dplyr::mutate(Diversity_type = "Beta (all pairs) - q = 0", .before = "Included_moderator") -> ci_results_div2_beta_r0
 
 ## Effects on Gamma-Diversity (q = 0) ------------------------------------------
 
@@ -1169,9 +1117,6 @@ mod_hac_div2_gamma_r0_res <- simulateResiduals(fittedModel = mod_hac_div2_gamma_
 plot(mod_hac_div2_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_gamma_r0_res) # no overdispersion
 
-summary(mod_hac_div2_gamma_r0) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_gamma_r0$effort_diff_cent <- scale(log(moders_div2_gamma_r0$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1182,18 +1127,12 @@ mod_eff_div2_gamma_r0_res <- simulateResiduals(fittedModel = mod_eff_div2_gamma_
 plot(mod_eff_div2_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_eff_div2_gamma_r0_res) # no overdispersion
 
-
-summary(mod_eff_div2_gamma_r0) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_gamma_r0 <- lm(ha_slope_div2_gamma_r0 ~ time_since_fragmentation, data = moders_div2_gamma_r0)
 mod_time_div2_gamma_r0_res <- simulateResiduals(fittedModel = mod_time_div2_gamma_r0, plot = F)
 plot(mod_time_div2_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_gamma_r0_res) # no overdispersion
-
-summary(mod_time_div2_gamma_r0) # report results
 
 # continent 
 
@@ -1202,13 +1141,13 @@ mod_cont_div2_gamma_r0_res <- simulateResiduals(fittedModel = mod_cont_div2_gamm
 plot(mod_cont_div2_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_cont_div2_gamma_r0_res) # no overdispersion
 
-summary(mod_cont_div2_gamma_r0)  # report results
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_gamma_r0, mod_eff_div2_gamma_r0, mod_time_div2_gamma_r0, mod_cont_div2_gamma_r0) %>% 
   dplyr::mutate(Diversity_type = "Gamma (all pairs) - q = 0", .before = "Included_moderator") -> moder_results_div2_gamma_r0
 
+extract_confint(mod_hac_div2_gamma_r0, mod_eff_div2_gamma_r0, mod_time_div2_gamma_r0, mod_cont_div2_gamma_r0) %>% 
+  dplyr::mutate(Diversity_type = "Gamma (all pairs) - q = 0", .before = "Included_moderator") -> ci_results_div2_gamma_r0
 
 ## Effects on Alpha-Diversity (q = 2) ------------------------------------------
 
@@ -1285,9 +1224,6 @@ mod_hac_div2_alpha_r2_res <- simulateResiduals(fittedModel = mod_hac_div2_alpha_
 plot(mod_hac_div2_alpha_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_alpha_r2_res) # no overdispersion
 
-summary(mod_hac_div2_alpha_r2) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_alpha_r2$effort_diff_cent <- scale(log(moders_div2_alpha_r2$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1298,18 +1234,12 @@ mod_eff_div2_alpha_r2_res <- simulateResiduals(fittedModel = mod_eff_div2_alpha_
 plot(mod_eff_div2_alpha_r2_res) # residuals normally distributed
 testDispersion(mod_eff_div2_alpha_r2_res) # no overdispersion
 
-
-summary(mod_eff_div2_alpha_r2) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_alpha_r2 <- lm(ha_slope_div2_alpha_r2 ~ time_since_fragmentation, data = moders_div2_alpha_r2)
 mod_time_div2_alpha_r2_res <- simulateResiduals(fittedModel = mod_time_div2_alpha_r2, plot = F)
 plot(mod_time_div2_alpha_r2_res) # residuals normally distributed, but heterogeneous variance
 testDispersion(mod_hac_div2_alpha_r2_res) # no overdispersion
-
-summary(mod_time_div2_alpha_r2) # report results (note: this model does not have homogeneous variance)
 
 # continent 
 
@@ -1318,13 +1248,13 @@ mod_cont_div2_alpha_r2_res <- simulateResiduals(fittedModel = mod_cont_div2_alph
 plot(mod_cont_div2_alpha_r2_res) # residuals normally distributed
 testDispersion(mod_cont_div2_alpha_r2_res) # no overdispersion
 
-summary(mod_cont_div2_alpha_r2)  # report results
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_alpha_r2, mod_eff_div2_alpha_r2, mod_time_div2_alpha_r2, mod_cont_div2_alpha_r2) %>% 
   dplyr::mutate(Diversity_type = "Alpha (all pairs) - q = 2", .before = "Included_moderator") -> moder_results_div2_alpha_r2
 
+extract_confint(mod_hac_div2_alpha_r2, mod_eff_div2_alpha_r2, mod_time_div2_alpha_r2, mod_cont_div2_alpha_r2) %>% 
+  dplyr::mutate(Diversity_type = "Alpha (all pairs) - q = 2", .before = "Included_moderator") -> ci_results_div2_alpha_r2
 
 ## Effects on Beta-Diversity (q = 2) -------------------------------------------
 
@@ -1392,9 +1322,6 @@ mod_hac_div2_beta_r2_res <- simulateResiduals(fittedModel = mod_hac_div2_beta_r2
 plot(mod_hac_div2_beta_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_beta_r2_res) # no overdispersion
 
-summary(mod_hac_div2_beta_r2) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_beta_r2$effort_diff_cent <- scale(log(moders_div2_beta_r2$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1405,18 +1332,12 @@ mod_eff_div2_beta_r2_res <- simulateResiduals(fittedModel = mod_eff_div2_beta_r2
 plot(mod_eff_div2_beta_r2_res) # residuals normally distributed
 testDispersion(mod_eff_div2_beta_r2_res) # no overdispersion
 
-
-summary(mod_eff_div2_beta_r2) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_beta_r2 <- lm(ha_slope_div2_beta_r2 ~ time_since_fragmentation, data = moders_div2_beta_r2)
 mod_time_div2_beta_r2_res <- simulateResiduals(fittedModel = mod_time_div2_beta_r2, plot = F)
 plot(mod_time_div2_beta_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_beta_r2_res) # no overdispersion
-
-summary(mod_time_div2_beta_r2) # report results 
 
 # continent 
 
@@ -1425,13 +1346,13 @@ mod_cont_div2_beta_r2_res <- simulateResiduals(fittedModel = mod_cont_div2_beta_
 plot(mod_cont_div2_beta_r2_res) # residuals normally distributed
 testDispersion(mod_cont_div2_beta_r2_res) # no overdispersion
 
-summary(mod_cont_div2_beta_r2)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_beta_r2, mod_eff_div2_beta_r2, mod_time_div2_beta_r2, mod_cont_div2_beta_r2) %>% 
   dplyr::mutate(Diversity_type = "Beta (all pairs) - q = 2", .before = "Included_moderator") -> moder_results_div2_beta_r2
+
+extract_confint(mod_hac_div2_beta_r2, mod_eff_div2_beta_r2, mod_time_div2_beta_r2, mod_cont_div2_beta_r2) %>% 
+  dplyr::mutate(Diversity_type = "Beta (all pairs) - q = 2", .before = "Included_moderator") -> ci_results_div2_beta_r2
 
 
 ## Effects on Gamma-Diversity (q = 2) ------------------------------------------
@@ -1509,9 +1430,6 @@ mod_hac_div2_gamma_r2_res <- simulateResiduals(fittedModel = mod_hac_div2_gamma_
 plot(mod_hac_div2_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_gamma_r2_res) # no overdispersion
 
-summary(mod_hac_div2_gamma_r2) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_gamma_r2$effort_diff_cent <- scale(log(moders_div2_gamma_r2$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1522,18 +1440,12 @@ mod_eff_div2_gamma_r2_res <- simulateResiduals(fittedModel = mod_eff_div2_gamma_
 plot(mod_eff_div2_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_eff_div2_gamma_r2_res) # no overdispersion
 
-
-summary(mod_eff_div2_gamma_r2) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_gamma_r2 <- lm(ha_slope_div2_gamma_r2 ~ time_since_fragmentation, data = moders_div2_gamma_r2)
 mod_time_div2_gamma_r2_res <- simulateResiduals(fittedModel = mod_time_div2_gamma_r2, plot = F)
 plot(mod_time_div2_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_gamma_r2_res) # no overdispersion
-
-summary(mod_time_div2_gamma_r2) # report results 
 
 # continent 
 
@@ -1542,12 +1454,12 @@ mod_cont_div2_gamma_r2_res <- simulateResiduals(fittedModel = mod_cont_div2_gamm
 plot(mod_cont_div2_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_cont_div2_gamma_r2_res) # no overdispersion
 
-summary(mod_cont_div2_gamma_r2)  # report results
-
 ## save the results to export later 
 lm_results(mod_hac_div2_gamma_r2, mod_eff_div2_gamma_r2, mod_time_div2_gamma_r2, mod_cont_div2_gamma_r2) %>% 
   dplyr::mutate(Diversity_type = "Gamma (all pairs) - q = 2", .before = "Included_moderator") -> moder_results_div2_gamma_r2
 
+extract_confint(mod_hac_div2_gamma_r2, mod_eff_div2_gamma_r2, mod_time_div2_gamma_r2, mod_cont_div2_gamma_r2) %>% 
+  dplyr::mutate(Diversity_type = "Gamma (all pairs) - q = 2", .before = "Included_moderator") -> ci_results_div2_gamma_r2
 
 
 ### GLMMs ----------------------------------------------------------------------
@@ -1623,9 +1535,6 @@ mod_hac_div2_cl_alpha_r0_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_
 plot(mod_hac_div2_cl_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_alpha_r0_res) # no overdispersion
 
-summary(mod_hac_div2_cl_alpha_r0) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_alpha_r0$effort_diff_cent <- scale(log(moders_div2_cl_alpha_r0$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1636,18 +1545,12 @@ mod_eff_div2_cl_alpha_r0_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_
 plot(mod_eff_div2_cl_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_alpha_r0_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_alpha_r0) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_cl_alpha_r0 <- lm(ha_slope_div2_cl_alpha_r0 ~ time_since_fragmentation, data = moders_div2_cl_alpha_r0)
 mod_time_div2_cl_alpha_r0_res <- simulateResiduals(fittedModel = mod_time_div2_cl_alpha_r0, plot = F)
 plot(mod_time_div2_cl_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_alpha_r0_res) # no overdispersion
-
-summary(mod_time_div2_cl_alpha_r0) # report results
 
 # continent 
 
@@ -1656,12 +1559,13 @@ mod_cont_div2_cl_alpha_r0_res <- simulateResiduals(fittedModel = mod_cont_div2_c
 plot(mod_cont_div2_cl_alpha_r0_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_alpha_r0_res) # no overdispersion
 
-summary(mod_cont_div2_cl_alpha_r0)  # report results
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_alpha_r0, mod_eff_div2_cl_alpha_r0, mod_time_div2_cl_alpha_r0, mod_cont_div2_cl_alpha_r0) %>% 
   dplyr::mutate(Diversity_type = "Alpha (nearest pairs) - q = 0", .before = "Included_moderator") -> moder_results_div2_cl_alpha_r0
+
+extract_confint(mod_hac_div2_cl_alpha_r0, mod_eff_div2_cl_alpha_r0, mod_time_div2_cl_alpha_r0, mod_cont_div2_cl_alpha_r0) %>% 
+  dplyr::mutate(Diversity_type = "Alpha (nearest pairs) - q = 0", .before = "Included_moderator") -> ci_results_div2_cl_alpha_r0
 
 ## Effects on Beta-Diversity (q = 0) -------------------------------------------
 
@@ -1729,9 +1633,6 @@ mod_hac_div2_cl_beta_r0_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_b
 plot(mod_hac_div2_cl_beta_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_beta_r0_res) # no overdispersion
 
-summary(mod_hac_div2_cl_beta_r0) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_beta_r0$effort_diff_cent <- scale(log(moders_div2_cl_beta_r0$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1742,18 +1643,12 @@ mod_eff_div2_cl_beta_r0_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_b
 plot(mod_eff_div2_cl_beta_r0_res) # residuals normally distributed, but heterogeneous variance
 testDispersion(mod_eff_div2_cl_beta_r0_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_beta_r0) # report results (note: model does not have homogeneous variance) 
-
-
 # time since fragmentation
 
 mod_time_div2_cl_beta_r0 <- lm(ha_slope_div2_cl_beta_r0 ~ time_since_fragmentation, data = moders_div2_cl_beta_r0)
 mod_time_div2_cl_beta_r0_res <- simulateResiduals(fittedModel = mod_time_div2_cl_beta_r0, plot = F)
 plot(mod_time_div2_cl_beta_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_beta_r0_res) # no overdispersion
-
-summary(mod_time_div2_cl_beta_r0) # report results
 
 # continent 
 
@@ -1762,13 +1657,14 @@ mod_cont_div2_cl_beta_r0_res <- simulateResiduals(fittedModel = mod_cont_div2_cl
 plot(mod_cont_div2_cl_beta_r0_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_beta_r0_res) # no overdispersion
 
-summary(mod_cont_div2_cl_beta_r0)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_beta_r0, mod_eff_div2_cl_beta_r0, mod_time_div2_cl_beta_r0, mod_cont_div2_cl_beta_r0) %>% 
   dplyr::mutate(Diversity_type = "Beta (nearest pairs) - q = 0", .before = "Included_moderator") -> moder_results_div2_cl_beta_r0
+
+extract_confint(mod_hac_div2_cl_beta_r0, mod_eff_div2_cl_beta_r0, mod_time_div2_cl_beta_r0, mod_cont_div2_cl_beta_r0) %>% 
+  dplyr::mutate(Diversity_type = "Beta (nearest pairs) - q = 0", .before = "Included_moderator") -> ci_results_div2_cl_beta_r0
+
 
 ## Effects on Gamma-Diversity (q = 0) ------------------------------------------
 
@@ -1843,9 +1739,6 @@ mod_hac_div2_cl_gamma_r0_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_
 plot(mod_hac_div2_cl_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_gamma_r0_res) # no overdispersion
 
-summary(mod_hac_div2_cl_gamma_r0) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_gamma_r0$effort_diff_cent <- scale(log(moders_div2_cl_gamma_r0$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1856,18 +1749,12 @@ mod_eff_div2_cl_gamma_r0_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_
 plot(mod_eff_div2_cl_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_gamma_r0_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_gamma_r0) # report results # 
-
-
 # time since fragmentation
 
 mod_time_div2_cl_gamma_r0 <- lm(ha_slope_div2_cl_gamma_r0 ~ time_since_fragmentation, data = moders_div2_cl_gamma_r0)
 mod_time_div2_cl_gamma_r0_res <- simulateResiduals(fittedModel = mod_time_div2_cl_gamma_r0, plot = F)
 plot(mod_time_div2_cl_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_gamma_r0_res) # no overdispersion
-
-summary(mod_time_div2_cl_gamma_r0) # report results
 
 # continent 
 
@@ -1876,13 +1763,13 @@ mod_cont_div2_cl_gamma_r0_res <- simulateResiduals(fittedModel = mod_cont_div2_c
 plot(mod_cont_div2_cl_gamma_r0_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_gamma_r0_res) # no overdispersion
 
-summary(mod_cont_div2_cl_gamma_r0)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_gamma_r0, mod_eff_div2_cl_gamma_r0, mod_time_div2_cl_gamma_r0, mod_cont_div2_cl_gamma_r0) %>% 
   dplyr::mutate(Diversity_type = "Gamma (nearest pairs) - q = 0", .before = "Included_moderator") -> moder_results_div2_cl_gamma_r0
+
+extract_confint(mod_hac_div2_cl_gamma_r0, mod_eff_div2_cl_gamma_r0, mod_time_div2_cl_gamma_r0, mod_cont_div2_cl_gamma_r0) %>% 
+  dplyr::mutate(Diversity_type = "Gamma (nearest pairs) - q = 0", .before = "Included_moderator") -> ci_results_div2_cl_gamma_r0
 
 
 ## Effects on Alpha-Diversity (q = 2) ------------------------------------------
@@ -1961,9 +1848,6 @@ mod_hac_div2_cl_alpha_r2_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_
 plot(mod_hac_div2_cl_alpha_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_alpha_r2_res) # no overdispersion
 
-summary(mod_hac_div2_cl_alpha_r2) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_alpha_r2$effort_diff_cent <- scale(log(moders_div2_cl_alpha_r2$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -1974,18 +1858,12 @@ mod_eff_div2_cl_alpha_r2_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_
 plot(mod_eff_div2_cl_alpha_r2_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_alpha_r2_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_alpha_r2) # report results
-
-
 # time since fragmentation
 
 mod_time_div2_cl_alpha_r2 <- lm(ha_slope_div2_cl_alpha_r2 ~ time_since_fragmentation, data = moders_div2_cl_alpha_r2)
 mod_time_div2_cl_alpha_r2_res <- simulateResiduals(fittedModel = mod_time_div2_cl_alpha_r2, plot = F)
 plot(mod_time_div2_cl_alpha_r2_res) # residuals normally distributed, but heterogeneous variance
 testDispersion(mod_hac_div2_cl_alpha_r2_res) # no overdispersion
-
-summary(mod_time_div2_cl_alpha_r2) # report results (note: model does not have homogeneous variance)
 
 # continent 
 
@@ -1994,12 +1872,14 @@ mod_cont_div2_cl_alpha_r2_res <- simulateResiduals(fittedModel = mod_cont_div2_c
 plot(mod_cont_div2_cl_alpha_r2_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_alpha_r2_res) # no overdispersion
 
-summary(mod_cont_div2_cl_alpha_r2)  # report results
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_alpha_r2, mod_eff_div2_cl_alpha_r2, mod_time_div2_cl_alpha_r2, mod_cont_div2_cl_alpha_r2) %>% 
   dplyr::mutate(Diversity_type = "Alpha (nearest pairs) - q = 2", .before = "Included_moderator") -> moder_results_div2_cl_alpha_r2
+
+extract_confint(mod_hac_div2_cl_alpha_r2, mod_eff_div2_cl_alpha_r2, mod_time_div2_cl_alpha_r2, mod_cont_div2_cl_alpha_r2) %>% 
+  dplyr::mutate(Diversity_type = "Alpha (nearest pairs) - q = 2", .before = "Included_moderator") -> ci_results_div2_cl_alpha_r2
+
 
 ## Effects on Beta-Diversity (q = 2) -------------------------------------------
 
@@ -2066,9 +1946,6 @@ mod_hac_div2_cl_beta_r2_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_b
 plot(mod_hac_div2_cl_beta_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_beta_r2_res) # no overdispersion
 
-summary(mod_hac_div2_cl_beta_r2) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_beta_r2$effort_diff_cent <- scale(log(moders_div2_cl_beta_r2$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -2079,18 +1956,12 @@ mod_eff_div2_cl_beta_r2_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_b
 plot(mod_eff_div2_cl_beta_r2_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_beta_r2_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_beta_r2) # report results
-
-
 # time since fragmentation
 
 mod_time_div2_cl_beta_r2 <- lm(ha_slope_div2_cl_beta_r2 ~ time_since_fragmentation, data = moders_div2_cl_beta_r2)
 mod_time_div2_cl_beta_r2_res <- simulateResiduals(fittedModel = mod_time_div2_cl_beta_r2, plot = F)
 plot(mod_time_div2_cl_beta_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_beta_r2_res) # no overdispersion
-
-summary(mod_time_div2_cl_beta_r2) # report results
 
 # continent 
 
@@ -2099,13 +1970,13 @@ mod_cont_div2_cl_beta_r2_res <- simulateResiduals(fittedModel = mod_cont_div2_cl
 plot(mod_cont_div2_cl_beta_r2_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_beta_r2_res) # no overdispersion
 
-summary(mod_cont_div2_cl_beta_r2)  # report results
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_beta_r2, mod_eff_div2_cl_beta_r2, mod_time_div2_cl_beta_r2, mod_cont_div2_cl_beta_r2) %>% 
   dplyr::mutate(Diversity_type = "Beta (nearest pairs) - q = 2", .before = "Included_moderator") -> moder_results_div2_cl_beta_r2
 
+extract_confint(mod_hac_div2_cl_beta_r2, mod_eff_div2_cl_beta_r2, mod_time_div2_cl_beta_r2, mod_cont_div2_cl_beta_r2) %>% 
+  dplyr::mutate(Diversity_type = "Beta (nearest pairs) - q = 2", .before = "Included_moderator") -> ci_results_div2_cl_beta_r2
 
 ## Effects on Gamma-Diversity (q = 2) ------------------------------------------
 
@@ -2184,9 +2055,6 @@ mod_hac_div2_cl_gamma_r2_res <- simulateResiduals(fittedModel = mod_hac_div2_cl_
 plot(mod_hac_div2_cl_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_gamma_r2_res) # no overdispersion
 
-summary(mod_hac_div2_cl_gamma_r2) # report results
-
-
 # Difference in the sampling effort between fragmented and continuous landscapes
 
 moders_div2_cl_gamma_r2$effort_diff_cent <- scale(log(moders_div2_cl_gamma_r2$effort_diff+1), center = TRUE, scale = FALSE) 
@@ -2197,18 +2065,12 @@ mod_eff_div2_cl_gamma_r2_res <- simulateResiduals(fittedModel = mod_eff_div2_cl_
 plot(mod_eff_div2_cl_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_eff_div2_cl_gamma_r2_res) # no overdispersion
 
-
-summary(mod_eff_div2_cl_gamma_r2) # report results
-
-
 # time since fragmentation
 
 mod_time_div2_cl_gamma_r2 <- lm(ha_slope_div2_cl_gamma_r2 ~ time_since_fragmentation, data = moders_div2_cl_gamma_r2)
 mod_time_div2_cl_gamma_r2_res <- simulateResiduals(fittedModel = mod_time_div2_cl_gamma_r2, plot = F)
 plot(mod_time_div2_cl_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_hac_div2_cl_gamma_r2_res) # no overdispersion
-
-summary(mod_time_div2_cl_gamma_r2) # report results 
 
 # continent 
 
@@ -2217,14 +2079,13 @@ mod_cont_div2_cl_gamma_r2_res <- simulateResiduals(fittedModel = mod_cont_div2_c
 plot(mod_cont_div2_cl_gamma_r2_res) # residuals normally distributed
 testDispersion(mod_cont_div2_cl_gamma_r2_res) # no overdispersion
 
-summary(mod_cont_div2_cl_gamma_r2)  # report results
-
-
 ## save the results to export later
 
 lm_results(mod_hac_div2_cl_gamma_r2, mod_eff_div2_cl_gamma_r2, mod_time_div2_cl_gamma_r2, mod_cont_div2_cl_gamma_r2) %>% 
   dplyr::mutate(Diversity_type = "Gamma (nearest pairs) - q = 2", .before = "Included_moderator") -> moder_results_div2_cl_gamma_r2
 
+extract_confint(mod_hac_div2_cl_gamma_r2, mod_eff_div2_cl_gamma_r2, mod_time_div2_cl_gamma_r2, mod_cont_div2_cl_gamma_r2) %>% 
+  dplyr::mutate(Diversity_type = "Gamma (nearest pairs) - q = 2", .before = "Included_moderator") -> ci_results_div2_cl_gamma_r2
 
 
 #### EXPORT ALL RESULTS - main models and habitat amount models with moderators 
@@ -2260,9 +2121,37 @@ extracted_summaries_hamount <- extract_glmmTMB_summary(mod1_div2_alpha_ha_final,
                                                                      "Alpha (nearest pairs) - q = 2", "Beta (nearest pairs) - q = 2",  "Gamma (nearest pairs) - q = 2"))
 
 
+## habitat amount models with moderators ## Confidence intervals
 
+ci_results <- rbind.data.frame(
+  ci_results_div2_alpha,
+  ci_results_div2_beta,
+  ci_results_div2_gamma,
+  ci_results_div2_alpha_r0,
+  ci_results_div2_beta_r0,
+  ci_results_div2_gamma_r0,
+  ci_results_div2_alpha_r2,
+  ci_results_div2_beta_r2,
+  ci_results_div2_gamma_r2,
+  ci_results_div2_cl_alpha,
+  ci_results_div2_cl_beta,
+  ci_results_div2_cl_gamma,
+  ci_results_div2_cl_alpha_r0,
+  ci_results_div2_cl_beta_r0,
+  ci_results_div2_cl_gamma_r0,
+  ci_results_div2_cl_alpha_r2,
+  ci_results_div2_cl_beta_r2,
+  ci_results_div2_cl_gamma_r2
+) %>% 
+  dplyr::mutate(moderator = ifelse(grepl("eff",Included_moderator), "Number of pairs",
+                                   ifelse(grepl("hac",Included_moderator), "Habitat amount",
+                                          ifelse(grepl("time",Included_moderator), "Time after fragmentation", "Continent"))), 
+                .before=Included_moderator) %>% 
+  dplyr::select(-Included_moderator)
 
-## habitat amount models with moderators 
+rownames(ci_results) <- seq_len(nrow(ci_results))
+
+## habitat amount models with moderators # LM MODELS
 
 moderator_results <- rbind.data.frame(
   moder_results_div2_alpha,
@@ -2296,6 +2185,7 @@ rownames(moderator_results) <- seq_len(nrow(moderator_results))
 
 # write.csv(extracted_summaries_study, "results/extracted_summaries_study.csv")
 # write.csv(extracted_summaries_hamount, "results/extracted_summaries_hamount.csv")
+# write.csv(ci_results, "results/ci_results.csv")
 # write.csv(moderator_results, "results/moderator_results.csv")
 
 
