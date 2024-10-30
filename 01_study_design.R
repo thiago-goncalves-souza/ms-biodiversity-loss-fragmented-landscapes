@@ -213,10 +213,10 @@ std_pooled %>%
   mutate(beta = gamma / alpha_Sstd) -> pooled_abg
 
 ### Last, combine the results using the three sampling designs
-### abg_old stands for Alpha, Beta, and Gamma using the "old" way, ignoring sampling effort and distance decay
+### std_sampdesign_abg stands for Alpha, Beta, and Gamma using the "old" way, ignoring sampling effort and distance decay
 ### note: at least alpha diversity is standardized by sampling effort and study design (see methods)
-
-combined_abg_old <- rbind.data.frame(pooled_ABG, std_sampdesign_ABG) %>% 
+  
+combined_abg_old <- rbind.data.frame(pooled_abg, std_sampdesign_abg) %>% 
   rename(alpha = alpha_Sstd) %>% 
   pivot_longer(cols = alpha:beta,
                names_to = "diversity_index",
