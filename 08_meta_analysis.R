@@ -15,10 +15,10 @@ renv::restore() # it requires installing the package renv
 library(tidyverse)
 library(metafor)
 library(ggplot2)
-# library(orchaRd) # devtools::install_github("daniel1noble/orchaRd", force = TRUE)
+library(orchaRd) # devtools::install_github("daniel1noble/orchaRd", force = TRUE) # required only if you want to visualize the orchard plot
 library(gtools)
 library(ggbeeswarm)
-# library(Rmisc)
+library(Rmisc)
 source("utility_functions.R")
 
 # Data -------------------------------------------------------------------------
@@ -1212,6 +1212,9 @@ mod_results_rare0_alpha2 <- rbind.data.frame(results_mods1_rare0_alpha2,
 ### Data Preparation ------------------------------------------------------------
 # Filter alpha-diversity data
 
+### Data Preparation -----------------------------------------------------------
+# Filter alpha-diversity data
+
 frag_cont_rare_div2 %>% 
   filter(diversity_index == "alpha" & q_order == "q = 2") -> rare2_alpha2
 
@@ -1223,17 +1226,18 @@ transformed_data_rare2_alpha2 <- rare2_alpha2 %>%
 
 
 # Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
+
 rare2_alpha2_logR <- escalc(measure="ROM", 
                             m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
                             sd1i = continuous_sd, sd2i = fragmented_sd,
                             n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
                             data = transformed_data_rare2_alpha2)
 
-# combine matrices to add habitat amount
 
+# Add habitat amount information
 rare2_alpha2_logR <- left_join(rare2_alpha2_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare2_alpha2 <- rma.uni(yi, vi,
@@ -1242,33 +1246,20 @@ mod_overall_rare2_alpha2 <- rma.uni(yi, vi,
 
 summary(mod_overall_rare2_alpha2) # reported results 
 
+# Tables for plotting later
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare2_alpha2, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-
-# tables for plotting later
-
-overall_rare2_alpha2_res <- mod_results(mod_overall_rare2_alpha2, mod = "1", group = "refshort")
-overall_rare2_alpha2_est <- overall_rare2_alpha2_res$mod_table %>% 
+overall_rare2_alpha2_res <- overall_rma_results(mod_overall_rare2_alpha2)
+overall_rare2_alpha2_est <- overall_rare2_alpha2_res %>% 
   dplyr::mutate(diversity = "Alpha", 
                 type = "All pairs (q = 2)",
-                .before = name)
-overall_rare2_alpha2_dat <- overall_rare2_alpha2_res$data %>% 
+                .before = Estimate)
+overall_rare2_alpha2_dat <- mod_overall_rare2_alpha2$data %>% 
   dplyr::mutate(diversity = "Alpha",
                 type = "All pairs (q = 2)",
                 .before = yi)
 
 
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare2_alpha2 <- rma.uni(yi, vi,
@@ -1287,10 +1278,6 @@ mod_mods2_rare2_alpha2 <- rma.uni(yi, vi,
 
 summary(mod_mods2_rare2_alpha2) # reported results 
 
-orchaRd::orchard_plot(mod_mods2_rare2_alpha2, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing South America with other continents 
 
 rare2_alpha2_logR$continent_bin <- ifelse(rare2_alpha2_logR$continent == "South America", "South America", "Others")
@@ -1303,10 +1290,6 @@ mod_mods3_rare2_alpha2 <- rma.uni(yi, vi,
 
 summary(mod_mods3_rare2_alpha2) # reported results 
 
-orchaRd::orchard_plot(mod_mods3_rare2_alpha2, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare2_alpha2 <- rma.uni(yi, vi,
@@ -1316,16 +1299,19 @@ mod_mods4_rare2_alpha2 <- rma.uni(yi, vi,
 
 summary(mod_mods4_rare2_alpha2) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare2_alpha2, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare2_alpha2 <- influence.rma.uni(mod_overall_rare2_alpha2)
-plot(mod_infl_rare2_alpha2) # study 26 is an outlier
+plot(mod_infl_rare2_alpha2) # study 15 and 31 are outliers
+
+# double check whether the removal of study 15 and 31  affects the results
+
+mod_overall_rare2_alpha2_rem15_31 <- rma.uni(yi, vi,
+                                          data = rare2_alpha2_logR[c(-15, -31),],
+                                          method = "REML") # with random effect 
+
+mod_overall_rare2_alpha2_rem15_31 # same result. The estimate changed from 0.137 to 0.08 (still significant)
 
 # calculate the inverse of effective sample size
 rare2_alpha2_logR$inv_n <- with(rare2_alpha2_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -1356,9 +1342,8 @@ leave1out(mod_overall_rare2_alpha2) %>%
          .before = estimate) -> leave1out_mod_rare2_alpha2
 leave1out_mod_rare2_alpha2
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
-
 
 results_mods1_rare2_alpha2 <- extract_model_results(mod_mods1_rare2_alpha2, 
                                                     diversity_index = "Alpha (q=2)", 
@@ -1397,8 +1382,9 @@ mod_results_rare2_alpha2 <- rbind.data.frame(results_mods1_rare2_alpha2,
 
 # required data frames
 
+
 frag_cont_rare_div2 %>% 
-  filter(diversity_index == "beta" & buffer == 2000 & q_order == "q = 0") -> rare0_beta2
+  filter(diversity_index == "beta" & q_order == "q = 0") -> rare0_beta2
 
 transformed_data_rare0_beta2 <- rare0_beta2 %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -1407,74 +1393,58 @@ transformed_data_rare0_beta2 <- rare0_beta2 %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare0_beta2_logR <- escalc(measure="ROM", 
-                           m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
-                           sd1i = continuous_sd, sd2i = fragmented_sd,
-                           n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
-                           data = transformed_data_rare0_beta2)
+                            m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
+                            sd1i = continuous_sd, sd2i = fragmented_sd,
+                            n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
+                            data = transformed_data_rare0_beta2)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare0_beta2_logR <- left_join(rare0_beta2_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare0_beta2 <- rma.uni(yi, vi,
-                                   data = rare0_beta2_logR,
-                                   method = "REML") # with random effect 
+                                    data = rare0_beta2_logR,
+                                    method = "REML") # with random effect 
 
 summary(mod_overall_rare0_beta2) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare0_beta2_res <- mod_results(mod_overall_rare0_beta2, mod = "1", group = "refshort")
-overall_rare0_beta2_est <- overall_rare0_beta2_res$mod_table %>% 
+overall_rare0_beta2_res <- overall_rma_results(mod_overall_rare0_beta2)
+overall_rare0_beta2_est <- overall_rare0_beta2_res %>% 
   dplyr::mutate(diversity = "Beta", 
                 type = "All pairs (q = 0)",
-                .before = name)
-overall_rare0_beta2_dat <- overall_rare0_beta2_res$data %>% 
+                .before = Estimate)
+overall_rare0_beta2_dat <- mod_overall_rare0_beta2$data %>% 
   dplyr::mutate(diversity = "Beta",
                 type = "All pairs (q = 0)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare0_beta2, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare0_beta2 <- rma.uni(yi, vi,
-                                 data = rare0_beta2_logR,
-                                 mods = ~ ha_diff,
-                                 method = "REML") # with random effect 
+                                  data = rare0_beta2_logR,
+                                  mods = ~ ha_diff,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods1_rare0_beta2) # reported results 
 
 ## Habitat amount (quantiles)
 
 mod_mods2_rare0_beta2 <- rma.uni(yi, vi,
-                                 data = rare0_beta2_logR,
-                                 mods = ~ ha_class -1,
-                                 method = "REML") # with random effect 
+                                  data = rare0_beta2_logR,
+                                  mods = ~ ha_class -1,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods2_rare0_beta2) # reported results 
-
-orchaRd::orchard_plot(mod_mods2_rare0_beta2, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing South America with other continents 
 
@@ -1482,35 +1452,34 @@ rare0_beta2_logR$continent_bin <- ifelse(rare0_beta2_logR$continent == "South Am
 
 
 mod_mods3_rare0_beta2 <- rma.uni(yi, vi,
-                                 data = rare0_beta2_logR,
-                                 mods = ~ continent_bin - 1,
-                                 method = "REML") # with random effect 
+                                  data = rare0_beta2_logR,
+                                  mods = ~ continent_bin - 1,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods3_rare0_beta2) # reported results 
-
-orchaRd::orchard_plot(mod_mods3_rare0_beta2, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare0_beta2 <- rma.uni(yi, vi,
-                                 data = rare0_beta2_logR,
-                                 mods = ~ time_since_fragmentation - 1,
-                                 method = "REML") # with random effect 
+                                  data = rare0_beta2_logR,
+                                  mods = ~ time_since_fragmentation - 1,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods4_rare0_beta2) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare0_beta2, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare0_beta2 <- influence.rma.uni(mod_overall_rare0_beta2)
-plot(mod_infl_rare0_beta2) # study 26 is an outlier
+plot(mod_infl_rare0_beta2) # study 12 is an outlier
+
+# double check whether the removal of study 12 affects the results
+
+mod_overall_rare0_beta2_rem12 <- rma.uni(yi, vi,
+                                          data = rare0_beta2_logR[-12,],
+                                          method = "REML") # with random effect 
+
+mod_overall_rare0_beta2_rem12 # same result. The estimate changed from -0.014 to -0.0079 (still not significant)
 
 # calculate the inverse of effective sample size
 rare0_beta2_logR$inv_n <- with(rare0_beta2_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -1524,9 +1493,9 @@ rare0_beta2_logR$year_c <- as.vector(scale(rare0_beta2_logR$year, scale = F))
 ## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
 
 mod_rare0_beta2_check <- rma(yi, vi,
-                             mods = ~1 + sqrt_inv_n + year_c,
-                             data = rare0_beta2_logR,
-                             method = "REML")
+                              mods = ~1 + sqrt_inv_n + year_c,
+                              data = rare0_beta2_logR,
+                              method = "REML")
 summary(mod_rare0_beta2_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
 # Leave-one-out
@@ -1541,51 +1510,47 @@ leave1out(mod_overall_rare0_beta2) %>%
          .before = estimate) -> leave1out_mod_rare0_beta2
 leave1out_mod_rare0_beta2
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
 
-
 results_mods1_rare0_beta2 <- extract_model_results(mod_mods1_rare0_beta2, 
-                                                   diversity_index = "Beta (q=0)", 
-                                                   diversity_type = "All pairs") 
+                                                    diversity_index = "Beta (q=0)", 
+                                                    diversity_type = "All pairs") 
 
 
 results_mods2_rare0_beta2 <-extract_model_results(mod_mods2_rare0_beta2, 
-                                                  diversity_index = "Beta (q=0)", 
-                                                  diversity_type = "All pairs") 
+                                                   diversity_index = "Beta (q=0)", 
+                                                   diversity_type = "All pairs") 
 
 
 results_mods3_rare0_beta2 <- extract_model_results(mod_mods3_rare0_beta2, 
-                                                   diversity_index = "Beta (q=0)", 
-                                                   diversity_type = "All pairs") 
+                                                    diversity_index = "Beta (q=0)", 
+                                                    diversity_type = "All pairs") 
 
 
 
 results_mods4_rare0_beta2 <- extract_model_results(mod_mods4_rare0_beta2, 
-                                                   diversity_index = "Beta (q=0)", 
-                                                   diversity_type = "All pairs") 
+                                                    diversity_index = "Beta (q=0)", 
+                                                    diversity_type = "All pairs") 
 
 results_rare0_beta2_check <- extract_model_results(mod_rare0_beta2_check, 
-                                                   diversity_index = "Beta (q=0)", 
-                                                   diversity_type = "All pairs") 
+                                                    diversity_index = "Beta (q=0)", 
+                                                    diversity_type = "All pairs") 
 
 
 mod_results_rare0_beta2 <- rbind.data.frame(results_mods1_rare0_beta2, 
-                                            results_mods2_rare0_beta2, 
-                                            results_mods3_rare0_beta2,
-                                            results_mods4_rare0_beta2,
-                                            results_rare0_beta2_check)
-
-
+                                             results_mods2_rare0_beta2, 
+                                             results_mods3_rare0_beta2,
+                                             results_mods4_rare0_beta2,
+                                             results_rare0_beta2_check)
 
 
 ### Rarefied BETA diversity (all fragment / plot pairs) - q = 2
 
 
-# required data frames
 
 frag_cont_rare_div2 %>% 
-  filter(diversity_index == "beta" & buffer == 2000 & q_order == "q = 2") -> rare2_beta2
+  filter(diversity_index == "beta" & q_order == "q = 2") -> rare2_beta2
 
 transformed_data_rare2_beta2 <- rare2_beta2 %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -1594,7 +1559,7 @@ transformed_data_rare2_beta2 <- rare2_beta2 %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare2_beta2_logR <- escalc(measure="ROM", 
                            m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
@@ -1603,11 +1568,10 @@ rare2_beta2_logR <- escalc(measure="ROM",
                            data = transformed_data_rare2_beta2)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare2_beta2_logR <- left_join(rare2_beta2_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare2_beta2 <- rma.uni(yi, vi,
@@ -1616,31 +1580,20 @@ mod_overall_rare2_beta2 <- rma.uni(yi, vi,
 
 summary(mod_overall_rare2_beta2) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare2_beta2_res <- mod_results(mod_overall_rare2_beta2, mod = "1", group = "refshort")
-overall_rare2_beta2_est <- overall_rare2_beta2_res$mod_table %>% 
+overall_rare2_beta2_res <- overall_rma_results(mod_overall_rare2_beta2)
+overall_rare2_beta2_est <- overall_rare2_beta2_res %>% 
   dplyr::mutate(diversity = "Beta", 
                 type = "All pairs (q = 2)",
-                .before = name)
-overall_rare2_beta2_dat <- overall_rare2_beta2_res$data %>% 
+                .before = Estimate)
+overall_rare2_beta2_dat <- mod_overall_rare2_beta2$data %>% 
   dplyr::mutate(diversity = "Beta",
                 type = "All pairs (q = 2)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare2_beta2, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare2_beta2 <- rma.uni(yi, vi,
@@ -1659,10 +1612,6 @@ mod_mods2_rare2_beta2 <- rma.uni(yi, vi,
 
 summary(mod_mods2_rare2_beta2) # reported results 
 
-orchaRd::orchard_plot(mod_mods2_rare2_beta2, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing South America with other continents 
 
 rare2_beta2_logR$continent_bin <- ifelse(rare2_beta2_logR$continent == "South America", "South America", "Others")
@@ -1675,10 +1624,6 @@ mod_mods3_rare2_beta2 <- rma.uni(yi, vi,
 
 summary(mod_mods3_rare2_beta2) # reported results 
 
-orchaRd::orchard_plot(mod_mods3_rare2_beta2, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare2_beta2 <- rma.uni(yi, vi,
@@ -1688,16 +1633,11 @@ mod_mods4_rare2_beta2 <- rma.uni(yi, vi,
 
 summary(mod_mods4_rare2_beta2) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare2_beta2, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare2_beta2 <- influence.rma.uni(mod_overall_rare2_beta2)
-plot(mod_infl_rare2_beta2) # study 26 is an outlier
+plot(mod_infl_rare2_beta2) # there is no outlier
 
 # calculate the inverse of effective sample size
 rare2_beta2_logR$inv_n <- with(rare2_beta2_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -1728,8 +1668,8 @@ leave1out(mod_overall_rare2_beta2) %>%
          .before = estimate) -> leave1out_mod_rare2_beta2
 leave1out_mod_rare2_beta2
 
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
-
 
 results_mods1_rare2_beta2 <- extract_model_results(mod_mods1_rare2_beta2, 
                                                    diversity_index = "Beta (q=2)", 
@@ -1762,13 +1702,13 @@ mod_results_rare2_beta2 <- rbind.data.frame(results_mods1_rare2_beta2,
                                             results_mods4_rare2_beta2,
                                             results_rare2_beta2_check)
 
-### Rarified GAMMA diversity (all fragment / plot pairs) - q = 0
+### Rarefied GAMMA diversity (all fragment / plot pairs) - q = 0
 
 
 # required data frames
 
 frag_cont_rare_div2 %>% 
-  filter(diversity_index == "gamma" & buffer == 2000 & q_order == "q = 0") -> rare0_gamma2
+  filter(diversity_index == "gamma" & q_order == "q = 0") -> rare0_gamma2
 
 transformed_data_rare0_gamma2 <- rare0_gamma2 %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -1777,74 +1717,58 @@ transformed_data_rare0_gamma2 <- rare0_gamma2 %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare0_gamma2_logR <- escalc(measure="ROM", 
-                            m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
-                            sd1i = continuous_sd, sd2i = fragmented_sd,
-                            n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
-                            data = transformed_data_rare0_gamma2)
+                           m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
+                           sd1i = continuous_sd, sd2i = fragmented_sd,
+                           n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
+                           data = transformed_data_rare0_gamma2)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare0_gamma2_logR <- left_join(rare0_gamma2_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare0_gamma2 <- rma.uni(yi, vi,
-                                    data = rare0_gamma2_logR,
-                                    method = "REML") # with random effect 
+                                   data = rare0_gamma2_logR,
+                                   method = "REML") # with random effect 
 
 summary(mod_overall_rare0_gamma2) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare0_gamma2_res <- mod_results(mod_overall_rare0_gamma2, mod = "1", group = "refshort")
-overall_rare0_gamma2_est <- overall_rare0_gamma2_res$mod_table %>% 
+overall_rare0_gamma2_res <- overall_rma_results(mod_overall_rare0_gamma2)
+overall_rare0_gamma2_est <- overall_rare0_gamma2_res %>% 
   dplyr::mutate(diversity = "Gamma", 
                 type = "All pairs (q = 0)",
-                .before = name)
-overall_rare0_gamma2_dat <- overall_rare0_gamma2_res$data %>% 
+                .before = Estimate)
+overall_rare0_gamma2_dat <- mod_overall_rare0_gamma2$data %>% 
   dplyr::mutate(diversity = "Gamma",
                 type = "All pairs (q = 0)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare0_gamma2, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare0_gamma2 <- rma.uni(yi, vi,
-                                  data = rare0_gamma2_logR,
-                                  mods = ~ ha_diff,
-                                  method = "REML") # with random effect 
+                                 data = rare0_gamma2_logR,
+                                 mods = ~ ha_diff,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods1_rare0_gamma2) # reported results 
 
 ## Habitat amount (quantiles)
 
 mod_mods2_rare0_gamma2 <- rma.uni(yi, vi,
-                                  data = rare0_gamma2_logR,
-                                  mods = ~ ha_class -1,
-                                  method = "REML") # with random effect 
+                                 data = rare0_gamma2_logR,
+                                 mods = ~ ha_class -1,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods2_rare0_gamma2) # reported results 
-
-orchaRd::orchard_plot(mod_mods2_rare0_gamma2, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing South America with other continents 
 
@@ -1852,35 +1776,26 @@ rare0_gamma2_logR$continent_bin <- ifelse(rare0_gamma2_logR$continent == "South 
 
 
 mod_mods3_rare0_gamma2 <- rma.uni(yi, vi,
-                                  data = rare0_gamma2_logR,
-                                  mods = ~ continent_bin - 1,
-                                  method = "REML") # with random effect 
+                                 data = rare0_gamma2_logR,
+                                 mods = ~ continent_bin - 1,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods3_rare0_gamma2) # reported results 
-
-orchaRd::orchard_plot(mod_mods3_rare0_gamma2, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare0_gamma2 <- rma.uni(yi, vi,
-                                  data = rare0_gamma2_logR,
-                                  mods = ~ time_since_fragmentation - 1,
-                                  method = "REML") # with random effect 
+                                 data = rare0_gamma2_logR,
+                                 mods = ~ time_since_fragmentation - 1,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods4_rare0_gamma2) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare0_gamma2, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare0_gamma2 <- influence.rma.uni(mod_overall_rare0_gamma2)
-plot(mod_infl_rare0_gamma2) # study 26 is an outlier
+plot(mod_infl_rare0_gamma2) # there is no outlier
 
 # calculate the inverse of effective sample size
 rare0_gamma2_logR$inv_n <- with(rare0_gamma2_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -1894,9 +1809,9 @@ rare0_gamma2_logR$year_c <- as.vector(scale(rare0_gamma2_logR$year, scale = F))
 ## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
 
 mod_rare0_gamma2_check <- rma(yi, vi,
-                              mods = ~1 + sqrt_inv_n + year_c,
-                              data = rare0_gamma2_logR,
-                              method = "REML")
+                             mods = ~1 + sqrt_inv_n + year_c,
+                             data = rare0_gamma2_logR,
+                             method = "REML")
 summary(mod_rare0_gamma2_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
 # Leave-one-out
@@ -1911,40 +1826,39 @@ leave1out(mod_overall_rare0_gamma2) %>%
          .before = estimate) -> leave1out_mod_rare0_gamma2
 leave1out_mod_rare0_gamma2
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
 
-
 results_mods1_rare0_gamma2 <- extract_model_results(mod_mods1_rare0_gamma2, 
-                                                    diversity_index = "Gamma (q=0)", 
-                                                    diversity_type = "All pairs") 
-
-
-results_mods2_rare0_gamma2 <-extract_model_results(mod_mods2_rare0_gamma2, 
                                                    diversity_index = "Gamma (q=0)", 
                                                    diversity_type = "All pairs") 
 
 
+results_mods2_rare0_gamma2 <-extract_model_results(mod_mods2_rare0_gamma2, 
+                                                  diversity_index = "Gamma (q=0)", 
+                                                  diversity_type = "All pairs") 
+
+
 results_mods3_rare0_gamma2 <- extract_model_results(mod_mods3_rare0_gamma2, 
-                                                    diversity_index = "Gamma (q=0)", 
-                                                    diversity_type = "All pairs") 
+                                                   diversity_index = "Gamma (q=0)", 
+                                                   diversity_type = "All pairs") 
 
 
 
 results_mods4_rare0_gamma2 <- extract_model_results(mod_mods4_rare0_gamma2, 
-                                                    diversity_index = "Gamma (q=0)", 
-                                                    diversity_type = "All pairs") 
+                                                   diversity_index = "Gamma (q=0)", 
+                                                   diversity_type = "All pairs") 
 
 results_rare0_gamma2_check <- extract_model_results(mod_rare0_gamma2_check, 
-                                                    diversity_index = "Gamma (q=0)", 
-                                                    diversity_type = "All pairs") 
+                                                   diversity_index = "Gamma (q=0)", 
+                                                   diversity_type = "All pairs") 
 
 
 mod_results_rare0_gamma2 <- rbind.data.frame(results_mods1_rare0_gamma2, 
-                                             results_mods2_rare0_gamma2, 
-                                             results_mods3_rare0_gamma2,
-                                             results_mods4_rare0_gamma2,
-                                             results_rare0_gamma2_check)
+                                            results_mods2_rare0_gamma2, 
+                                            results_mods3_rare0_gamma2,
+                                            results_mods4_rare0_gamma2,
+                                            results_rare0_gamma2_check)
 
 ### Rarefied GAMMA diversity (all fragment / plot pairs) - q = 2
 
@@ -1952,7 +1866,7 @@ mod_results_rare0_gamma2 <- rbind.data.frame(results_mods1_rare0_gamma2,
 # required data frames
 
 frag_cont_rare_div2 %>% 
-  filter(diversity_index == "gamma" & buffer == 2000 & q_order == "q = 2") -> rare2_gamma2
+  filter(diversity_index == "gamma" & q_order == "q = 0") -> rare2_gamma2
 
 transformed_data_rare2_gamma2 <- rare2_gamma2 %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -1961,75 +1875,58 @@ transformed_data_rare2_gamma2 <- rare2_gamma2 %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare2_gamma2_logR <- escalc(measure="ROM", 
-                            m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
-                            sd1i = continuous_sd, sd2i = fragmented_sd,
-                            n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
-                            data = transformed_data_rare2_gamma2)
+                           m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
+                           sd1i = continuous_sd, sd2i = fragmented_sd,
+                           n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
+                           data = transformed_data_rare2_gamma2)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare2_gamma2_logR <- left_join(rare2_gamma2_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare2_gamma2 <- rma.uni(yi, vi,
-                                    data = rare2_gamma2_logR,
-                                    method = "REML") # with random effect 
+                                   data = rare2_gamma2_logR,
+                                   method = "REML") # with random effect 
 
 summary(mod_overall_rare2_gamma2) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare2_gamma2_res <- mod_results(mod_overall_rare2_gamma2, mod = "1", group = "refshort")
-overall_rare2_gamma2_est <- overall_rare2_gamma2_res$mod_table %>% 
+overall_rare2_gamma2_res <- overall_rma_results(mod_overall_rare2_gamma2)
+overall_rare2_gamma2_est <- overall_rare2_gamma2_res %>% 
   dplyr::mutate(diversity = "Gamma", 
                 type = "All pairs (q = 2)",
-                .before = name)
-overall_rare2_gamma2_dat <- overall_rare2_gamma2_res$data %>% 
+                .before = Estimate)
+overall_rare2_gamma2_dat <- mod_overall_rare2_gamma2$data %>% 
   dplyr::mutate(diversity = "Gamma",
                 type = "All pairs (q = 2)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare2_gamma2, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare2_gamma2 <- rma.uni(yi, vi,
-                                  data = rare2_gamma2_logR,
-                                  mods = ~ ha_diff,
-                                  method = "REML") # with random effect 
+                                 data = rare2_gamma2_logR,
+                                 mods = ~ ha_diff,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods1_rare2_gamma2) # reported results 
 
 ## Habitat amount (quantiles)
 
 mod_mods2_rare2_gamma2 <- rma.uni(yi, vi,
-                                  data = rare2_gamma2_logR,
-                                  mods = ~ ha_class -1,
-                                  method = "REML") # with random effect 
+                                 data = rare2_gamma2_logR,
+                                 mods = ~ ha_class -1,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods2_rare2_gamma2) # reported results 
-
-orchaRd::orchard_plot(mod_mods2_rare2_gamma2, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing South America with other continents 
 
@@ -2037,35 +1934,26 @@ rare2_gamma2_logR$continent_bin <- ifelse(rare2_gamma2_logR$continent == "South 
 
 
 mod_mods3_rare2_gamma2 <- rma.uni(yi, vi,
-                                  data = rare2_gamma2_logR,
-                                  mods = ~ continent_bin - 1,
-                                  method = "REML") # with random effect 
+                                 data = rare2_gamma2_logR,
+                                 mods = ~ continent_bin - 1,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods3_rare2_gamma2) # reported results 
-
-orchaRd::orchard_plot(mod_mods3_rare2_gamma2, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare2_gamma2 <- rma.uni(yi, vi,
-                                  data = rare2_gamma2_logR,
-                                  mods = ~ time_since_fragmentation - 1,
-                                  method = "REML") # with random effect 
+                                 data = rare2_gamma2_logR,
+                                 mods = ~ time_since_fragmentation - 1,
+                                 method = "REML") # with random effect 
 
 summary(mod_mods4_rare2_gamma2) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare2_gamma2, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare2_gamma2 <- influence.rma.uni(mod_overall_rare2_gamma2)
-plot(mod_infl_rare2_gamma2) # study 26 is an outlier
+plot(mod_infl_rare2_gamma2) # there is no outlier
 
 # calculate the inverse of effective sample size
 rare2_gamma2_logR$inv_n <- with(rare2_gamma2_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -2079,9 +1967,9 @@ rare2_gamma2_logR$year_c <- as.vector(scale(rare2_gamma2_logR$year, scale = F))
 ## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
 
 mod_rare2_gamma2_check <- rma(yi, vi,
-                              mods = ~1 + sqrt_inv_n + year_c,
-                              data = rare2_gamma2_logR,
-                              method = "REML")
+                             mods = ~1 + sqrt_inv_n + year_c,
+                             data = rare2_gamma2_logR,
+                             method = "REML")
 summary(mod_rare2_gamma2_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
 # Leave-one-out
@@ -2096,41 +1984,39 @@ leave1out(mod_overall_rare2_gamma2) %>%
          .before = estimate) -> leave1out_mod_rare2_gamma2
 leave1out_mod_rare2_gamma2
 
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
 
-
 results_mods1_rare2_gamma2 <- extract_model_results(mod_mods1_rare2_gamma2, 
-                                                    diversity_index = "Gamma (q=2)", 
-                                                    diversity_type = "All pairs") 
-
-
-results_mods2_rare2_gamma2 <-extract_model_results(mod_mods2_rare2_gamma2, 
                                                    diversity_index = "Gamma (q=2)", 
                                                    diversity_type = "All pairs") 
 
 
+results_mods2_rare2_gamma2 <-extract_model_results(mod_mods2_rare2_gamma2, 
+                                                  diversity_index = "Gamma (q=2)", 
+                                                  diversity_type = "All pairs") 
+
+
 results_mods3_rare2_gamma2 <- extract_model_results(mod_mods3_rare2_gamma2, 
-                                                    diversity_index = "Gamma (q=2)", 
-                                                    diversity_type = "All pairs") 
+                                                   diversity_index = "Gamma (q=2)", 
+                                                   diversity_type = "All pairs") 
 
 
 
 results_mods4_rare2_gamma2 <- extract_model_results(mod_mods4_rare2_gamma2, 
-                                                    diversity_index = "Gamma (q=2)", 
-                                                    diversity_type = "All pairs") 
+                                                   diversity_index = "Gamma (q=2)", 
+                                                   diversity_type = "All pairs") 
 
 results_rare2_gamma2_check <- extract_model_results(mod_rare2_gamma2_check, 
-                                                    diversity_index = "Gamma (q=2)", 
-                                                    diversity_type = "All pairs") 
+                                                   diversity_index = "Gamma (q=2)", 
+                                                   diversity_type = "All pairs") 
 
 
 mod_results_rare2_gamma2 <- rbind.data.frame(results_mods1_rare2_gamma2, 
-                                             results_mods2_rare2_gamma2, 
-                                             results_mods3_rare2_gamma2,
-                                             results_mods4_rare2_gamma2,
-                                             results_rare2_gamma2_check)
-
-
+                                            results_mods2_rare2_gamma2, 
+                                            results_mods3_rare2_gamma2,
+                                            results_mods4_rare2_gamma2,
+                                            results_rare2_gamma2_check)
 
 ### Rarefied ALPHA diversity (nearest pairs) - q = 0
 
@@ -2138,7 +2024,7 @@ mod_results_rare2_gamma2 <- rbind.data.frame(results_mods1_rare2_gamma2,
 # required data frames
 
 frag_cont_rare_div2_cl %>% 
-  filter(diversity_index == "alpha" & buffer == 2000 & q_order == "q = 0") -> rare0_alpha2_cl
+  filter(diversity_index == "alpha" & q_order == "q = 0") -> rare0_alpha2_cl
 
 transformed_data_rare0_alpha2_cl <- rare0_alpha2_cl %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -2147,74 +2033,58 @@ transformed_data_rare0_alpha2_cl <- rare0_alpha2_cl %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare0_alpha2_cl_logR <- escalc(measure="ROM", 
-                               m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
-                               sd1i = continuous_sd, sd2i = fragmented_sd,
-                               n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
-                               data = transformed_data_rare0_alpha2_cl)
+                            m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
+                            sd1i = continuous_sd, sd2i = fragmented_sd,
+                            n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
+                            data = transformed_data_rare0_alpha2_cl)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare0_alpha2_cl_logR <- left_join(rare0_alpha2_cl_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare0_alpha2_cl <- rma.uni(yi, vi,
-                                       data = rare0_alpha2_cl_logR,
-                                       method = "REML") # with random effect 
+                                    data = rare0_alpha2_cl_logR,
+                                    method = "REML") # with random effect 
 
 summary(mod_overall_rare0_alpha2_cl) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare0_alpha2_cl_res <- mod_results(mod_overall_rare0_alpha2_cl, mod = "1", group = "refshort")
-overall_rare0_alpha2_cl_est <- overall_rare0_alpha2_cl_res$mod_table %>% 
+overall_rare0_alpha2_cl_res <- overall_rma_results(mod_overall_rare0_alpha2_cl)
+overall_rare0_alpha2_cl_est <- overall_rare0_alpha2_cl_res %>% 
   dplyr::mutate(diversity = "Alpha", 
                 type = "Nearest pairs (q = 0)",
-                .before = name)
-overall_rare0_alpha2_cl_dat <- overall_rare0_alpha2_cl_res$data %>% 
+                .before = Estimate)
+overall_rare0_alpha2_cl_dat <- mod_overall_rare0_alpha2_cl$data %>% 
   dplyr::mutate(diversity = "Alpha",
                 type = "Nearest pairs (q = 0)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare0_alpha2_cl, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare0_alpha2_cl <- rma.uni(yi, vi,
-                                     data = rare0_alpha2_cl_logR,
-                                     mods = ~ ha_diff,
-                                     method = "REML") # with random effect 
+                                  data = rare0_alpha2_cl_logR,
+                                  mods = ~ ha_diff,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods1_rare0_alpha2_cl) # reported results 
 
 ## Habitat amount (quantiles)
 
 mod_mods2_rare0_alpha2_cl <- rma.uni(yi, vi,
-                                     data = rare0_alpha2_cl_logR,
-                                     mods = ~ ha_class -1,
-                                     method = "REML") # with random effect 
+                                  data = rare0_alpha2_cl_logR,
+                                  mods = ~ ha_class -1,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods2_rare0_alpha2_cl) # reported results 
-
-orchaRd::orchard_plot(mod_mods2_rare0_alpha2_cl, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing South America with other continents 
 
@@ -2222,35 +2092,34 @@ rare0_alpha2_cl_logR$continent_bin <- ifelse(rare0_alpha2_cl_logR$continent == "
 
 
 mod_mods3_rare0_alpha2_cl <- rma.uni(yi, vi,
-                                     data = rare0_alpha2_cl_logR,
-                                     mods = ~ continent_bin - 1,
-                                     method = "REML") # with random effect 
+                                  data = rare0_alpha2_cl_logR,
+                                  mods = ~ continent_bin - 1,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods3_rare0_alpha2_cl) # reported results 
-
-orchaRd::orchard_plot(mod_mods3_rare0_alpha2_cl, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare0_alpha2_cl <- rma.uni(yi, vi,
-                                     data = rare0_alpha2_cl_logR,
-                                     mods = ~ time_since_fragmentation - 1,
-                                     method = "REML") # with random effect 
+                                  data = rare0_alpha2_cl_logR,
+                                  mods = ~ time_since_fragmentation - 1,
+                                  method = "REML") # with random effect 
 
 summary(mod_mods4_rare0_alpha2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare0_alpha2_cl, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare0_alpha2_cl <- influence.rma.uni(mod_overall_rare0_alpha2_cl)
-plot(mod_infl_rare0_alpha2_cl) # study 26 is an outlier
+plot(mod_infl_rare0_alpha2_cl) # study 8 is an outlier
+
+# double check whether the removal of study 8 affects the results
+
+mod_overall_rare0_alpha2_cl_rem8 <- rma.uni(yi, vi,
+                                    data = rare0_alpha2_cl_logR[-8,],
+                                    method = "REML") # with random effect 
+
+mod_overall_rare0_alpha2_cl_rem8 # same result. The estimate changed from 0.09 to 0.08 (still significant)
 
 # calculate the inverse of effective sample size
 rare0_alpha2_cl_logR$inv_n <- with(rare0_alpha2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -2264,9 +2133,9 @@ rare0_alpha2_cl_logR$year_c <- as.vector(scale(rare0_alpha2_cl_logR$year, scale 
 ## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
 
 mod_rare0_alpha2_cl_check <- rma(yi, vi,
-                                 mods = ~1 + sqrt_inv_n + year_c,
-                                 data = rare0_alpha2_cl_logR,
-                                 method = "REML")
+                              mods = ~1 + sqrt_inv_n + year_c,
+                              data = rare0_alpha2_cl_logR,
+                              method = "REML")
 summary(mod_rare0_alpha2_cl_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
 # Leave-one-out
@@ -2281,40 +2150,39 @@ leave1out(mod_overall_rare0_alpha2_cl) %>%
          .before = estimate) -> leave1out_mod_rare0_alpha2_cl
 leave1out_mod_rare0_alpha2_cl
 
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
 
-
 results_mods1_rare0_alpha2_cl <- extract_model_results(mod_mods1_rare0_alpha2_cl, 
-                                                       diversity_index = "Alpha (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                    diversity_index = "Alpha (q=0)", 
+                                                    diversity_type = "Nearest pairs") 
 
 
 results_mods2_rare0_alpha2_cl <-extract_model_results(mod_mods2_rare0_alpha2_cl, 
-                                                      diversity_index = "Alpha (q=0)", 
-                                                      diversity_type = "Nearest pairs") 
+                                                   diversity_index = "Alpha (q=0)", 
+                                                   diversity_type = "Nearest pairs") 
 
 
 results_mods3_rare0_alpha2_cl <- extract_model_results(mod_mods3_rare0_alpha2_cl, 
-                                                       diversity_index = "Alpha (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                    diversity_index = "Alpha (q=0)", 
+                                                    diversity_type = "Nearest pairs") 
 
 
 
 results_mods4_rare0_alpha2_cl <- extract_model_results(mod_mods4_rare0_alpha2_cl, 
-                                                       diversity_index = "Alpha (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                    diversity_index = "Alpha (q=0)", 
+                                                    diversity_type = "Nearest pairs") 
 
 results_rare0_alpha2_cl_check <- extract_model_results(mod_rare0_alpha2_cl_check, 
-                                                       diversity_index = "Alpha (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                    diversity_index = "Alpha (q=0)", 
+                                                    diversity_type = "Nearest pairs") 
 
 
 mod_results_rare0_alpha2_cl <- rbind.data.frame(results_mods1_rare0_alpha2_cl, 
-                                                results_mods2_rare0_alpha2_cl, 
-                                                results_mods3_rare0_alpha2_cl,
-                                                results_mods4_rare0_alpha2_cl,
-                                                results_rare0_alpha2_cl_check)
-
+                                             results_mods2_rare0_alpha2_cl, 
+                                             results_mods3_rare0_alpha2_cl,
+                                             results_mods4_rare0_alpha2_cl,
+                                             results_rare0_alpha2_cl_check)
 
 
 ### Rarefied ALPHA diversity (nearest pairs) - q = 2
@@ -2323,7 +2191,7 @@ mod_results_rare0_alpha2_cl <- rbind.data.frame(results_mods1_rare0_alpha2_cl,
 # required data frames
 
 frag_cont_rare_div2_cl %>% 
-  filter(diversity_index == "alpha" & buffer == 2000 & q_order == "q = 2") -> rare2_alpha2_cl
+  filter(diversity_index == "alpha" & q_order == "q = 2") -> rare2_alpha2_cl
 
 transformed_data_rare2_alpha2_cl <- rare2_alpha2_cl %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -2332,7 +2200,7 @@ transformed_data_rare2_alpha2_cl <- rare2_alpha2_cl %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare2_alpha2_cl_logR <- escalc(measure="ROM", 
                                m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
@@ -2341,11 +2209,10 @@ rare2_alpha2_cl_logR <- escalc(measure="ROM",
                                data = transformed_data_rare2_alpha2_cl)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare2_alpha2_cl_logR <- left_join(rare2_alpha2_cl_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare2_alpha2_cl <- rma.uni(yi, vi,
@@ -2354,31 +2221,20 @@ mod_overall_rare2_alpha2_cl <- rma.uni(yi, vi,
 
 summary(mod_overall_rare2_alpha2_cl) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare2_alpha2_cl_res <- mod_results(mod_overall_rare2_alpha2_cl, mod = "1", group = "refshort")
-overall_rare2_alpha2_cl_est <- overall_rare2_alpha2_cl_res$mod_table %>% 
+overall_rare2_alpha2_cl_res <- overall_rma_results(mod_overall_rare2_alpha2_cl)
+overall_rare2_alpha2_cl_est <- overall_rare2_alpha2_cl_res %>% 
   dplyr::mutate(diversity = "Alpha", 
                 type = "Nearest pairs (q = 2)",
-                .before = name)
-overall_rare2_alpha2_cl_dat <- overall_rare2_alpha2_cl_res$data %>% 
+                .before = Estimate)
+overall_rare2_alpha2_cl_dat <- mod_overall_rare2_alpha2_cl$data %>% 
   dplyr::mutate(diversity = "Alpha",
                 type = "Nearest pairs (q = 2)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare2_alpha2_cl, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare2_alpha2_cl <- rma.uni(yi, vi,
@@ -2397,10 +2253,6 @@ mod_mods2_rare2_alpha2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods2_rare2_alpha2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods2_rare2_alpha2_cl, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing South America with other continents 
 
 rare2_alpha2_cl_logR$continent_bin <- ifelse(rare2_alpha2_cl_logR$continent == "South America", "South America", "Others")
@@ -2413,10 +2265,6 @@ mod_mods3_rare2_alpha2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods3_rare2_alpha2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods3_rare2_alpha2_cl, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare2_alpha2_cl <- rma.uni(yi, vi,
@@ -2426,16 +2274,19 @@ mod_mods4_rare2_alpha2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods4_rare2_alpha2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare2_alpha2_cl, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare2_alpha2_cl <- influence.rma.uni(mod_overall_rare2_alpha2_cl)
-plot(mod_infl_rare2_alpha2_cl) # study 26 is an outlier
+plot(mod_infl_rare2_alpha2_cl) # study 10, 15 and 31 are outliers
+
+# double check whether the removal of study 8 affects the results
+
+mod_overall_rare2_alpha2_cl_rem_3stds <- rma.uni(yi, vi,
+                                            data = rare2_alpha2_cl_logR[c(-10, -15, -31),],
+                                            method = "REML") # with random effect 
+
+mod_overall_rare2_alpha2_cl_rem_3stds # slight change in the result. The estimate changed from 0.10 to 0.04 (marginally significant)
 
 # calculate the inverse of effective sample size
 rare2_alpha2_cl_logR$inv_n <- with(rare2_alpha2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -2454,7 +2305,6 @@ mod_rare2_alpha2_cl_check <- rma(yi, vi,
                                  method = "REML")
 summary(mod_rare2_alpha2_cl_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
-
 # Leave-one-out
 # note, I added the column refshort, but the row value represents the estimate after "excluding" that refshort
 
@@ -2467,9 +2317,8 @@ leave1out(mod_overall_rare2_alpha2_cl) %>%
          .before = estimate) -> leave1out_mod_rare2_alpha2_cl
 leave1out_mod_rare2_alpha2_cl
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
-
 
 results_mods1_rare2_alpha2_cl <- extract_model_results(mod_mods1_rare2_alpha2_cl, 
                                                        diversity_index = "Alpha (q=2)", 
@@ -2509,7 +2358,7 @@ mod_results_rare2_alpha2_cl <- rbind.data.frame(results_mods1_rare2_alpha2_cl,
 # required data frames
 
 frag_cont_rare_div2_cl %>% 
-  filter(diversity_index == "beta" & buffer == 2000 & q_order == "q = 0") -> rare0_beta2_cl
+  filter(diversity_index == "beta" & q_order == "q = 0") -> rare0_beta2_cl
 
 transformed_data_rare0_beta2_cl <- rare0_beta2_cl %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -2518,74 +2367,58 @@ transformed_data_rare0_beta2_cl <- rare0_beta2_cl %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare0_beta2_cl_logR <- escalc(measure="ROM", 
-                              m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
-                              sd1i = continuous_sd, sd2i = fragmented_sd,
-                              n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
-                              data = transformed_data_rare0_beta2_cl)
+                               m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
+                               sd1i = continuous_sd, sd2i = fragmented_sd,
+                               n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
+                               data = transformed_data_rare0_beta2_cl)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare0_beta2_cl_logR <- left_join(rare0_beta2_cl_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare0_beta2_cl <- rma.uni(yi, vi,
-                                      data = rare0_beta2_cl_logR,
-                                      method = "REML") # with random effect 
+                                       data = rare0_beta2_cl_logR,
+                                       method = "REML") # with random effect 
 
 summary(mod_overall_rare0_beta2_cl) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare0_beta2_cl_res <- mod_results(mod_overall_rare0_beta2_cl, mod = "1", group = "refshort")
-overall_rare0_beta2_cl_est <- overall_rare0_beta2_cl_res$mod_table %>% 
+overall_rare0_beta2_cl_res <- overall_rma_results(mod_overall_rare0_beta2_cl)
+overall_rare0_beta2_cl_est <- overall_rare0_beta2_cl_res %>% 
   dplyr::mutate(diversity = "Beta", 
                 type = "Nearest pairs (q = 0)",
-                .before = name)
-overall_rare0_beta2_cl_dat <- overall_rare0_beta2_cl_res$data %>% 
+                .before = Estimate)
+overall_rare0_beta2_cl_dat <- mod_overall_rare0_beta2_cl$data %>% 
   dplyr::mutate(diversity = "Beta",
                 type = "Nearest pairs (q = 0)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare0_beta2_cl, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare0_beta2_cl <- rma.uni(yi, vi,
-                                    data = rare0_beta2_cl_logR,
-                                    mods = ~ ha_diff,
-                                    method = "REML") # with random effect 
+                                     data = rare0_beta2_cl_logR,
+                                     mods = ~ ha_diff,
+                                     method = "REML") # with random effect 
 
 summary(mod_mods1_rare0_beta2_cl) # reported results 
 
 ## Habitat amount (quantiles)
 
 mod_mods2_rare0_beta2_cl <- rma.uni(yi, vi,
-                                    data = rare0_beta2_cl_logR,
-                                    mods = ~ ha_class -1,
-                                    method = "REML") # with random effect 
+                                     data = rare0_beta2_cl_logR,
+                                     mods = ~ ha_class -1,
+                                     method = "REML") # with random effect 
 
 summary(mod_mods2_rare0_beta2_cl) # reported results 
-
-orchaRd::orchard_plot(mod_mods2_rare0_beta2_cl, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing South America with other continents 
 
@@ -2593,35 +2426,34 @@ rare0_beta2_cl_logR$continent_bin <- ifelse(rare0_beta2_cl_logR$continent == "So
 
 
 mod_mods3_rare0_beta2_cl <- rma.uni(yi, vi,
-                                    data = rare0_beta2_cl_logR,
-                                    mods = ~ continent_bin - 1,
-                                    method = "REML") # with random effect 
+                                     data = rare0_beta2_cl_logR,
+                                     mods = ~ continent_bin - 1,
+                                     method = "REML") # with random effect 
 
 summary(mod_mods3_rare0_beta2_cl) # reported results 
-
-orchaRd::orchard_plot(mod_mods3_rare0_beta2_cl, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare0_beta2_cl <- rma.uni(yi, vi,
-                                    data = rare0_beta2_cl_logR,
-                                    mods = ~ time_since_fragmentation - 1,
-                                    method = "REML") # with random effect 
+                                     data = rare0_beta2_cl_logR,
+                                     mods = ~ time_since_fragmentation - 1,
+                                     method = "REML") # with random effect 
 
 summary(mod_mods4_rare0_beta2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare0_beta2_cl, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare0_beta2_cl <- influence.rma.uni(mod_overall_rare0_beta2_cl)
-plot(mod_infl_rare0_beta2_cl) # study 26 is an outlier
+plot(mod_infl_rare0_beta2_cl) # study 8 is an outlier
+
+# double check whether the removal of study 8 affects the results
+
+mod_overall_rare0_beta2_cl_rem8 <- rma.uni(yi, vi,
+                                            data = rare0_beta2_cl_logR[-8,],
+                                            method = "REML") # with random effect 
+
+mod_overall_rare0_beta2_cl_rem8 # same result. The estimate changed from -0.0018 to 0.004 (still not significant)
 
 # calculate the inverse of effective sample size
 rare0_beta2_cl_logR$inv_n <- with(rare0_beta2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -2635,9 +2467,9 @@ rare0_beta2_cl_logR$year_c <- as.vector(scale(rare0_beta2_cl_logR$year, scale = 
 ## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
 
 mod_rare0_beta2_cl_check <- rma(yi, vi,
-                                mods = ~1 + sqrt_inv_n + year_c,
-                                data = rare0_beta2_cl_logR,
-                                method = "REML")
+                                 mods = ~1 + sqrt_inv_n + year_c,
+                                 data = rare0_beta2_cl_logR,
+                                 method = "REML")
 summary(mod_rare0_beta2_cl_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
 # Leave-one-out
@@ -2652,40 +2484,40 @@ leave1out(mod_overall_rare0_beta2_cl) %>%
          .before = estimate) -> leave1out_mod_rare0_beta2_cl
 leave1out_mod_rare0_beta2_cl
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
 
-
 results_mods1_rare0_beta2_cl <- extract_model_results(mod_mods1_rare0_beta2_cl, 
-                                                      diversity_index = "Beta (q=0)", 
-                                                      diversity_type = "Nearest pairs") 
+                                                       diversity_index = "Beta (q=0)", 
+                                                       diversity_type = "Nearest pairs") 
 
 
 results_mods2_rare0_beta2_cl <-extract_model_results(mod_mods2_rare0_beta2_cl, 
-                                                     diversity_index = "Beta (q=0)", 
-                                                     diversity_type = "Nearest pairs") 
+                                                      diversity_index = "Beta (q=0)", 
+                                                      diversity_type = "Nearest pairs") 
 
 
 results_mods3_rare0_beta2_cl <- extract_model_results(mod_mods3_rare0_beta2_cl, 
-                                                      diversity_index = "Beta (q=0)", 
-                                                      diversity_type = "Nearest pairs") 
+                                                       diversity_index = "Beta (q=0)", 
+                                                       diversity_type = "Nearest pairs") 
 
 
 
 results_mods4_rare0_beta2_cl <- extract_model_results(mod_mods4_rare0_beta2_cl, 
-                                                      diversity_index = "Beta (q=0)", 
-                                                      diversity_type = "Nearest pairs") 
+                                                       diversity_index = "Beta (q=0)", 
+                                                       diversity_type = "Nearest pairs") 
 
 results_rare0_beta2_cl_check <- extract_model_results(mod_rare0_beta2_cl_check, 
-                                                      diversity_index = "Beta (q=0)", 
-                                                      diversity_type = "Nearest pairs") 
+                                                       diversity_index = "Beta (q=0)", 
+                                                       diversity_type = "Nearest pairs") 
 
 
 mod_results_rare0_beta2_cl <- rbind.data.frame(results_mods1_rare0_beta2_cl, 
-                                               results_mods2_rare0_beta2_cl, 
-                                               results_mods3_rare0_beta2_cl,
-                                               results_mods4_rare0_beta2_cl,
-                                               results_rare0_beta2_cl_check)
+                                                results_mods2_rare0_beta2_cl, 
+                                                results_mods3_rare0_beta2_cl,
+                                                results_mods4_rare0_beta2_cl,
+                                                results_rare0_beta2_cl_check)
+
 
 
 ### Rarefied BETA diversity (nearest pairs) - q = 2
@@ -2694,7 +2526,7 @@ mod_results_rare0_beta2_cl <- rbind.data.frame(results_mods1_rare0_beta2_cl,
 # required data frames
 
 frag_cont_rare_div2_cl %>% 
-  filter(diversity_index == "beta" & buffer == 2000 & q_order == "q = 2") -> rare2_beta2_cl
+  filter(diversity_index == "beta" & q_order == "q = 2") -> rare2_beta2_cl
 
 transformed_data_rare2_beta2_cl <- rare2_beta2_cl %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -2703,7 +2535,7 @@ transformed_data_rare2_beta2_cl <- rare2_beta2_cl %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare2_beta2_cl_logR <- escalc(measure="ROM", 
                               m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
@@ -2712,11 +2544,10 @@ rare2_beta2_cl_logR <- escalc(measure="ROM",
                               data = transformed_data_rare2_beta2_cl)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare2_beta2_cl_logR <- left_join(rare2_beta2_cl_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare2_beta2_cl <- rma.uni(yi, vi,
@@ -2725,32 +2556,20 @@ mod_overall_rare2_beta2_cl <- rma.uni(yi, vi,
 
 summary(mod_overall_rare2_beta2_cl) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare2_beta2_cl_res <- mod_results(mod_overall_rare2_beta2_cl, mod = "1", group = "refshort")
-overall_rare2_beta2_cl_est <- overall_rare2_beta2_cl_res$mod_table %>% 
+overall_rare2_beta2_cl_res <- overall_rma_results(mod_overall_rare2_beta2_cl)
+overall_rare2_beta2_cl_est <- overall_rare2_beta2_cl_res %>% 
   dplyr::mutate(diversity = "Beta", 
                 type = "Nearest pairs (q = 2)",
-                .before = name)
-overall_rare2_beta2_cl_dat <- overall_rare2_beta2_cl_res$data %>% 
+                .before = Estimate)
+overall_rare2_beta2_cl_dat <- mod_overall_rare2_beta2_cl$data %>% 
   dplyr::mutate(diversity = "Beta",
                 type = "Nearest pairs (q = 2)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare2_beta2_cl, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare2_beta2_cl <- rma.uni(yi, vi,
@@ -2769,10 +2588,6 @@ mod_mods2_rare2_beta2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods2_rare2_beta2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods2_rare2_beta2_cl, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing South America with other continents 
 
 rare2_beta2_cl_logR$continent_bin <- ifelse(rare2_beta2_cl_logR$continent == "South America", "South America", "Others")
@@ -2785,10 +2600,6 @@ mod_mods3_rare2_beta2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods3_rare2_beta2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods3_rare2_beta2_cl, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare2_beta2_cl <- rma.uni(yi, vi,
@@ -2798,16 +2609,19 @@ mod_mods4_rare2_beta2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods4_rare2_beta2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare2_beta2_cl, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare2_beta2_cl <- influence.rma.uni(mod_overall_rare2_beta2_cl)
-plot(mod_infl_rare2_beta2_cl) # study 26 is an outlier
+plot(mod_infl_rare2_beta2_cl) # studies 4, 13, 14, 22 and 32 are outliers
+
+# double check whether the removal of studies 4, 13, 14, 22 and 32 affects the results
+
+mod_overall_rare2_beta2_cl_rem_5stds <- rma.uni(yi, vi,
+                                           data = rare2_beta2_cl_logR[c(-4, -13, -14, -22, -32),],
+                                           method = "REML") # with random effect 
+
+mod_overall_rare2_beta2_cl_rem_5stds # same result. The estimate changed from 0.0227 to 0.0125 (still not significant)
 
 # calculate the inverse of effective sample size
 rare2_beta2_cl_logR$inv_n <- with(rare2_beta2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -2838,9 +2652,8 @@ leave1out(mod_overall_rare2_beta2_cl) %>%
          .before = estimate) -> leave1out_mod_rare2_beta2_cl
 leave1out_mod_rare2_beta2_cl
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
-
 
 results_mods1_rare2_beta2_cl <- extract_model_results(mod_mods1_rare2_beta2_cl, 
                                                       diversity_index = "Beta (q=2)", 
@@ -2874,14 +2687,13 @@ mod_results_rare2_beta2_cl <- rbind.data.frame(results_mods1_rare2_beta2_cl,
                                                results_rare2_beta2_cl_check)
 
 
-
 ### Rarefied GAMMA diversity (nearest pairs) - q = 0
 
 
 # required data frames
 
 frag_cont_rare_div2_cl %>% 
-  filter(diversity_index == "gamma" & buffer == 2000 & q_order == "q = 0") -> rare0_gamma2_cl
+  filter(diversity_index == "gamma" & q_order == "q = 0") -> rare0_gamma2_cl
 
 transformed_data_rare0_gamma2_cl <- rare0_gamma2_cl %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -2890,101 +2702,58 @@ transformed_data_rare0_gamma2_cl <- rare0_gamma2_cl %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare0_gamma2_cl_logR <- escalc(measure="ROM", 
-                               m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
-                               sd1i = continuous_sd, sd2i = fragmented_sd,
-                               n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
-                               data = transformed_data_rare0_gamma2_cl)
+                              m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
+                              sd1i = continuous_sd, sd2i = fragmented_sd,
+                              n1i = continuous_n_pairs, n2i = fragmented_n_pairs,
+                              data = transformed_data_rare0_gamma2_cl)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare0_gamma2_cl_logR <- left_join(rare0_gamma2_cl_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare0_gamma2_cl <- rma.uni(yi, vi,
-                                       data = rare0_gamma2_cl_logR,
-                                       method = "REML") # with random effect 
+                                      data = rare0_gamma2_cl_logR,
+                                      method = "REML") # with random effect 
 
 summary(mod_overall_rare0_gamma2_cl) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare0_gamma2_cl_res <- mod_results(mod_overall_rare0_gamma2_cl, mod = "1", group = "refshort")
-overall_rare0_gamma2_cl_est <- overall_rare0_gamma2_cl_res$mod_table %>% 
+overall_rare0_gamma2_cl_res <- overall_rma_results(mod_overall_rare0_gamma2_cl)
+overall_rare0_gamma2_cl_est <- overall_rare0_gamma2_cl_res %>% 
   dplyr::mutate(diversity = "Gamma", 
                 type = "Nearest pairs (q = 0)",
-                .before = name)
-overall_rare0_gamma2_cl_dat <- overall_rare0_gamma2_cl_res$data %>% 
+                .before = Estimate)
+overall_rare0_gamma2_cl_dat <- mod_overall_rare0_gamma2_cl$data %>% 
   dplyr::mutate(diversity = "Gamma",
                 type = "Nearest pairs (q = 0)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare0_gamma2_cl, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
-# influential study diagnostics 
-
-mod_infl_rare0_gamma2_cl <- influence.rma.uni(mod_overall_rare0_gamma2_cl)
-plot(mod_infl_rare0_gamma2_cl) # study 26 is an outlier
-
-# calculate the inverse of effective sample size
-rare0_gamma2_cl_logR$inv_n <- with(rare0_gamma2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
-rare0_gamma2_cl_logR$sqrt_inv_n <- with(rare0_gamma2_cl_logR, sqrt(inv_n))
-
-# Time-lag bias test
-
-rare0_gamma2_cl_logR$year <- as.numeric(gsub(".*?([0-9]+).*", "\\1", rare0_gamma2_cl_logR$refshort))
-rare0_gamma2_cl_logR$year_c <- as.vector(scale(rare0_gamma2_cl_logR$year, scale = F))
-
-## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
-
-mod_rare0_gamma2_cl_check <- rma(yi, vi,
-                                 mods = ~1 + sqrt_inv_n + year_c,
-                                 data = rare0_gamma2_cl_logR,
-                                 method = "REML")
-summary(mod_rare0_gamma2_cl_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
-
-### Add moderators 
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare0_gamma2_cl <- rma.uni(yi, vi,
-                                     data = rare0_gamma2_cl_logR,
-                                     mods = ~ ha_diff,
-                                     method = "REML") # with random effect 
+                                    data = rare0_gamma2_cl_logR,
+                                    mods = ~ ha_diff,
+                                    method = "REML") # with random effect 
 
 summary(mod_mods1_rare0_gamma2_cl) # reported results 
 
 ## Habitat amount (quantiles)
 
 mod_mods2_rare0_gamma2_cl <- rma.uni(yi, vi,
-                                     data = rare0_gamma2_cl_logR,
-                                     mods = ~ ha_class -1,
-                                     method = "REML") # with random effect 
+                                    data = rare0_gamma2_cl_logR,
+                                    mods = ~ ha_class -1,
+                                    method = "REML") # with random effect 
 
 summary(mod_mods2_rare0_gamma2_cl) # reported results 
-
-orchaRd::orchard_plot(mod_mods2_rare0_gamma2_cl, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing South America with other continents 
 
@@ -2992,35 +2761,26 @@ rare0_gamma2_cl_logR$continent_bin <- ifelse(rare0_gamma2_cl_logR$continent == "
 
 
 mod_mods3_rare0_gamma2_cl <- rma.uni(yi, vi,
-                                     data = rare0_gamma2_cl_logR,
-                                     mods = ~ continent_bin - 1,
-                                     method = "REML") # with random effect 
+                                    data = rare0_gamma2_cl_logR,
+                                    mods = ~ continent_bin - 1,
+                                    method = "REML") # with random effect 
 
 summary(mod_mods3_rare0_gamma2_cl) # reported results 
-
-orchaRd::orchard_plot(mod_mods3_rare0_gamma2_cl, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
 
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare0_gamma2_cl <- rma.uni(yi, vi,
-                                     data = rare0_gamma2_cl_logR,
-                                     mods = ~ time_since_fragmentation - 1,
-                                     method = "REML") # with random effect 
+                                    data = rare0_gamma2_cl_logR,
+                                    mods = ~ time_since_fragmentation - 1,
+                                    method = "REML") # with random effect 
 
 summary(mod_mods4_rare0_gamma2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare0_gamma2_cl, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare0_gamma2_cl <- influence.rma.uni(mod_overall_rare0_gamma2_cl)
-plot(mod_infl_rare0_gamma2_cl) # study 26 is an outlier
+plot(mod_infl_rare0_gamma2_cl) # there are no outliers
 
 # calculate the inverse of effective sample size
 rare0_gamma2_cl_logR$inv_n <- with(rare0_gamma2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -3034,9 +2794,9 @@ rare0_gamma2_cl_logR$year_c <- as.vector(scale(rare0_gamma2_cl_logR$year, scale 
 ## All-in publication bias test (multi-moderator: sample size and year of publication) - based on Nakagawa et al. 2021
 
 mod_rare0_gamma2_cl_check <- rma(yi, vi,
-                                 mods = ~1 + sqrt_inv_n + year_c,
-                                 data = rare0_gamma2_cl_logR,
-                                 method = "REML")
+                                mods = ~1 + sqrt_inv_n + year_c,
+                                data = rare0_gamma2_cl_logR,
+                                method = "REML")
 summary(mod_rare0_gamma2_cl_check) # there is no evidence of small-study effect and time lag bias (multi-moderator bias test)
 
 # Leave-one-out
@@ -3051,39 +2811,39 @@ leave1out(mod_overall_rare0_gamma2_cl) %>%
          .before = estimate) -> leave1out_mod_rare0_gamma2_cl
 leave1out_mod_rare0_gamma2_cl
 
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
 
-
 results_mods1_rare0_gamma2_cl <- extract_model_results(mod_mods1_rare0_gamma2_cl, 
-                                                       diversity_index = "Gamma (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
-
-
-results_mods2_rare0_gamma2_cl <-extract_model_results(mod_mods2_rare0_gamma2_cl, 
                                                       diversity_index = "Gamma (q=0)", 
                                                       diversity_type = "Nearest pairs") 
 
 
+results_mods2_rare0_gamma2_cl <-extract_model_results(mod_mods2_rare0_gamma2_cl, 
+                                                     diversity_index = "Gamma (q=0)", 
+                                                     diversity_type = "Nearest pairs") 
+
+
 results_mods3_rare0_gamma2_cl <- extract_model_results(mod_mods3_rare0_gamma2_cl, 
-                                                       diversity_index = "Gamma (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                      diversity_index = "Gamma (q=0)", 
+                                                      diversity_type = "Nearest pairs") 
 
 
 
 results_mods4_rare0_gamma2_cl <- extract_model_results(mod_mods4_rare0_gamma2_cl, 
-                                                       diversity_index = "Gamma (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                      diversity_index = "Gamma (q=0)", 
+                                                      diversity_type = "Nearest pairs") 
 
 results_rare0_gamma2_cl_check <- extract_model_results(mod_rare0_gamma2_cl_check, 
-                                                       diversity_index = "Gamma (q=0)", 
-                                                       diversity_type = "Nearest pairs") 
+                                                      diversity_index = "Gamma (q=0)", 
+                                                      diversity_type = "Nearest pairs") 
 
 
 mod_results_rare0_gamma2_cl <- rbind.data.frame(results_mods1_rare0_gamma2_cl, 
-                                                results_mods2_rare0_gamma2_cl, 
-                                                results_mods3_rare0_gamma2_cl,
-                                                results_mods4_rare0_gamma2_cl,
-                                                results_rare0_gamma2_cl_check)
+                                               results_mods2_rare0_gamma2_cl, 
+                                               results_mods3_rare0_gamma2_cl,
+                                               results_mods4_rare0_gamma2_cl,
+                                               results_rare0_gamma2_cl_check)
 
 
 ### Rarefied GAMMA diversity (nearest pairs) - q = 2
@@ -3091,8 +2851,9 @@ mod_results_rare0_gamma2_cl <- rbind.data.frame(results_mods1_rare0_gamma2_cl,
 
 # required data frames
 
+
 frag_cont_rare_div2_cl %>% 
-  filter(diversity_index == "gamma" & buffer == 2000 & q_order == "q = 2") -> rare2_gamma2_cl
+  filter(diversity_index == "gamma" & q_order == "q = 2") -> rare2_gamma2_cl
 
 transformed_data_rare2_gamma2_cl <- rare2_gamma2_cl %>% 
   dplyr::select(refshort, patch_type, diversity_value, sd, n_pairs) %>% 
@@ -3101,7 +2862,7 @@ transformed_data_rare2_gamma2_cl <- rare2_gamma2_cl %>%
               names_glue = "{patch_type}_{.value}")
 
 
-# Calculate log transformed ratio of means (Hedges et al., 1999; Lajeunesse, 2011)
+# Calculate log response ratio (LRR) (Hedges et al., 1999; Lajeunesse, 2011)
 
 rare2_gamma2_cl_logR <- escalc(measure="ROM", 
                                m1i = continuous_diversity_value, m2i = fragmented_diversity_value,
@@ -3110,11 +2871,10 @@ rare2_gamma2_cl_logR <- escalc(measure="ROM",
                                data = transformed_data_rare2_gamma2_cl)
 
 
-# combine matrices to add habitat amount
-
+# Add habitat amount information
 rare2_gamma2_cl_logR <- left_join(rare2_gamma2_cl_logR, landscape_info, by = "refshort")
 
-
+### Model Fitting --------------------------------------------------------------
 # Meta-Analysis via Linear (Mixed-Effects) Models
 
 mod_overall_rare2_gamma2_cl <- rma.uni(yi, vi,
@@ -3123,31 +2883,20 @@ mod_overall_rare2_gamma2_cl <- rma.uni(yi, vi,
 
 summary(mod_overall_rare2_gamma2_cl) # reported results 
 
-# tables for plotting later
+# Tables for plotting later
 
-overall_rare2_gamma2_cl_res <- mod_results(mod_overall_rare2_gamma2_cl, mod = "1", group = "refshort")
-overall_rare2_gamma2_cl_est <- overall_rare2_gamma2_cl_res$mod_table %>% 
+overall_rare2_gamma2_cl_res <- overall_rma_results(mod_overall_rare2_gamma2_cl)
+overall_rare2_gamma2_cl_est <- overall_rare2_gamma2_cl_res %>% 
   dplyr::mutate(diversity = "Gamma", 
                 type = "Nearest pairs (q = 2)",
-                .before = name)
-overall_rare2_gamma2_cl_dat <- overall_rare2_gamma2_cl_res$data %>% 
+                .before = Estimate)
+overall_rare2_gamma2_cl_dat <- mod_overall_rare2_gamma2_cl$data %>% 
   dplyr::mutate(diversity = "Gamma",
                 type = "Nearest pairs (q = 2)",
                 .before = yi)
 
 
-
-## simple plot of the overall effects:
-# POSITIVE = continuous landscapes have larger diversity than fragmented landscapes 
-# NEGATIVE = fragmented landscapes have larger diversity than continuous landscapes 
-
-orchaRd::orchard_plot(mod_overall_rare2_gamma2_cl, mod = "1", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Add moderators 
-
-
+### Effects of Moderators -------------------------------------------------------
 ## Habitat amount (difference between fragmented and continuous landscapes)
 
 mod_mods1_rare2_gamma2_cl <- rma.uni(yi, vi,
@@ -3166,10 +2915,6 @@ mod_mods2_rare2_gamma2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods2_rare2_gamma2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods2_rare2_gamma2_cl, mod = "ha_class", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing South America with other continents 
 
 rare2_gamma2_cl_logR$continent_bin <- ifelse(rare2_gamma2_cl_logR$continent == "South America", "South America", "Others")
@@ -3182,10 +2927,6 @@ mod_mods3_rare2_gamma2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods3_rare2_gamma2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods3_rare2_gamma2_cl, mod = "continent_bin", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
 ## Comparing the effect sizes based on time since fragmentation (intermediate vs. long)  
 
 mod_mods4_rare2_gamma2_cl <- rma.uni(yi, vi,
@@ -3195,16 +2936,20 @@ mod_mods4_rare2_gamma2_cl <- rma.uni(yi, vi,
 
 summary(mod_mods4_rare2_gamma2_cl) # reported results 
 
-orchaRd::orchard_plot(mod_mods4_rare2_gamma2_cl, mod = "time_since_fragmentation", group = "refshort", xlab = "Log response ratio (LRR)",
-                      transfm = "none", twig.size = 0.5, trunk.size = 1)
-
-
-### Sensitivity Analysis 
-
+### Sensitivity Analysis -------------------------------------------------------
 # influential study diagnostics 
 
 mod_infl_rare2_gamma2_cl <- influence.rma.uni(mod_overall_rare2_gamma2_cl)
-plot(mod_infl_rare2_gamma2_cl) # study 26 is an outlier
+plot(mod_infl_rare2_gamma2_cl) # study 17 is an outlier
+
+# double check whether the removal of study 17 affects the results
+
+mod_overall_rare2_gamma2_cl_rem17 <- rma.uni(yi, vi,
+                                           data = rare2_gamma2_cl_logR[-17,],
+                                           method = "REML") # with random effect 
+
+mod_overall_rare2_gamma2_cl_rem17 # same result. The estimate changed from 0.153 to 0.122 (still significant)
+
 
 # calculate the inverse of effective sample size
 rare2_gamma2_cl_logR$inv_n <- with(rare2_gamma2_cl_logR, (continuous_n_pairs + fragmented_n_pairs)/(continuous_n_pairs * fragmented_n_pairs))
@@ -3235,9 +2980,8 @@ leave1out(mod_overall_rare2_gamma2_cl) %>%
          .before = estimate) -> leave1out_mod_rare2_gamma2_cl
 leave1out_mod_rare2_gamma2_cl
 
-
+### Output Preparation ---------------------------------------------------------
 ## Combined moderators and sensitivity analysis to a final data.frame per diversity index/type
-
 
 results_mods1_rare2_gamma2_cl <- extract_model_results(mod_mods1_rare2_gamma2_cl, 
                                                        diversity_index = "Gamma (q=2)", 
@@ -3269,7 +3013,6 @@ mod_results_rare2_gamma2_cl <- rbind.data.frame(results_mods1_rare2_gamma2_cl,
                                                 results_mods3_rare2_gamma2_cl,
                                                 results_mods4_rare2_gamma2_cl,
                                                 results_rare2_gamma2_cl_check)
-
 
 ### save results in data.frame to export and prepare figures 
 
@@ -3371,14 +3114,14 @@ overall_combined_dat$type_div <- factor(overall_combined_dat$type,
 ## plot 
 
 overall_combined_est %>%
-  ggplot(aes(x = estimate, y = type_div, group = diversity, color = diversity)) +
+  ggplot(aes(x = Estimate, y = type_div, group = diversity, color = diversity)) +
   geom_rect(aes(ymin = 0.5, ymax = 1.5, xmin = -Inf, xmax = Inf), color = "white", fill = "lightgrey", alpha = 0.03) + 
   geom_rect(aes(ymin = 2.5, ymax = 3.5, xmin = -Inf, xmax = Inf), color = "white", fill = "lightgrey", alpha = 0.03)+
   geom_rect(aes(ymin = 4.5, ymax = 5.5, xmin = -Inf, xmax = Inf), color = "white", fill = "lightgrey", alpha = 0.03)+
   ggbeeswarm::geom_quasirandom(data = overall_combined_dat, 
                                aes(x = yi, y = type_div, group = diversity, color = diversity, size = scale),
                                alpha = 0.3, dodge.width=.9) +
-  geom_errorbarh(aes(xmin = lowerCL, xmax = upperCL), position=position_dodge(width=.9), height = 0, linewidth = 1, color = "black") +
+  geom_errorbarh(aes(xmin = Estimate-SE, xmax = Estimate+SE), position=position_dodge(width=.9), height = 0, linewidth = 1, color = "black") +
   geom_vline(xintercept = 0, linetype = 3, colour = "black") +
   geom_point(aes(fill = diversity), size = 3, shape = 21, color = "black", position=position_dodge(width=.9),  show.legend = F) +
   theme_bw() +
@@ -3425,7 +3168,7 @@ ggsave("03_simple_unedited_figures/Figure2.svg",
 ### Back transform LRR to estimate % differences between the mean diversity in continuous and fragmented landscapes
 
 overall_combined_est %>% 
-  dplyr::mutate(proportional_change = (exp(estimate) - 1) * 100) -> overall_combined_est_p
+  dplyr::mutate(proportional_change = (exp(Estimate) - 1) * 100) -> overall_combined_est_p
 
 
 overall_combined_est_p %>% 
@@ -3478,9 +3221,8 @@ leave1oust_combined_summ %>%
   geom_linerange(aes(ymax = estimate + sd, ymin = estimate - sd, color = continent_bin), size = 4, alpha = 0.3)+
   geom_pointrange(aes(ymax = estimate + ci, ymin = estimate - ci, color = continent_bin), size = 0.4) + 
   facet_grid(type~diversity, scales = "free")+
-  geom_hline(data = overall_combined_est, mapping = aes(yintercept = estimate), linetype=3) +
+  geom_hline(data = overall_combined_est, mapping = aes(yintercept = Estimate), linetype=3) +
   scale_color_manual(values = c("#1b7837", "#762a83")) + 
-  # scale_fill_manual(values = c("#1b7837", "#762a83")) + 
   coord_flip() + 
   ylab("Estimate value after 'leave-one-out' ") +
   guides(fill = "none", colour = "none", size = "none") +
@@ -3521,4 +3263,3 @@ ggsave("03_simple_unedited_figures/figure_leave1out.svg",
        height = 15,
        width = 30,
        units = "cm")
-
