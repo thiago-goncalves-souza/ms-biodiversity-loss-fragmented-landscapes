@@ -20,19 +20,19 @@ library(svglite)
 # Data --------------------------------------------------------------------
 
 # Diversity of 2 (pair = all pairs)
-frag_cont_div2 <- read.csv("processed_data/diversity_of_2.csv", row.names = "X") 
+frag_cont_div2 <- read.csv("processed_data/diversity_of_2.csv") # use the argument "row.names = "X"" if you export your own csv when running the code.
 
 # Diversity of 2 (pair = nearest fragments)
 
-frag_cont_div2_cl <- read.csv("processed_data/diversity_of_2_close.csv", row.names = "X") 
+frag_cont_div2_cl <- read.csv("processed_data/diversity_of_2_close.csv") # use the argument "row.names = "X"" if you export your own csv when running the code.
 
-# Diversity of 2 (pair = all pairs) - rarefied estimates (q = 0 and q = 2)
+# Diversity of 2 (pair = all pairs) - rarefied estimates (q = 0 and q = 2) 
 
-frag_cont_rar_div2 <- read.csv("processed_data/frag_cont_raref_2.csv", row.names = "X") 
+frag_cont_rar_div2 <- read.csv("processed_data/frag_cont_raref_2.csv") # use the argument "row.names = "X"" if you export your own csv when running the code.
 
 # Diversity of 2 (pair = closest fragments) - rarefied estimates  (q = 0 and q = 2)
 
-frag_cont_rar_div2_cl <- read.csv("processed_data/frag_cont_raref_close_2.csv", row.names = "X") 
+frag_cont_rar_div2_cl <- read.csv("processed_data/frag_cont_raref_close_2.csv") # use the argument "row.names = "X"" if you export your own csv when running the code.
 
 
 # Figure 2 - models 1 (all pairs) and 2 (closest pairs)
