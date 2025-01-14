@@ -1,8 +1,5 @@
 
-# Project Title
-
-A brief description of what this project does and who it's for.
-
+# Species turnover does not rescue biodiversity in fragmented landscapes
 ## Table of Contents
 
 1. [Introduction](#introduction)
@@ -16,7 +13,7 @@ A brief description of what this project does and who it's for.
 
 ## Introduction
 
-This is the script to replicate all analyses run in the paper "Increasing species turnover does not alleviate biodiversity loss in fragmented landscapes"
+This is the repository with data and scripts to replicate all analyses run in the paper "Species turnover does not rescue biodiversity in fragmented landscapes"
 
 ## Directory Structure
 
