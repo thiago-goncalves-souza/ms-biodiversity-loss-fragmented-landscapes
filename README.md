@@ -8,12 +8,13 @@
 4. [Usage](#usage)
 5. [Scripts Description](#scripts-description)
 6. [Figures and Results](#figures-and-results)
-7. [Acknowledgments](#acknowledgments)
-8. [License](#license)
+7. [License](#license)
 
 ## Introduction
 
 This is the repository with data and scripts to replicate all analyses run in the paper "Species turnover does not rescue biodiversity in fragmented landscapes"
+
+While habitat fragmentation generally reduces biodiversity at the patch-scale (𝛂 diversity)1, there is ongoing controversy regarding whether such negative effects can be alleviated at the landscape-scale (𝛾 diversity) if among-patch diversity (𝛃 diversity) increases as a result of fragmentation2–6. However, this controversial view has not been rigorously tested. We use a dataset of 4,006 taxa across 37 studies from six continents to test the effects of fragmentation on biodiversity across scales by explicitly comparing continuous and fragmented landscapes. We find that fragmented landscapes consistently had both lower 𝛂- and lower 𝛾 diversity. While fragmented landscapes did tend to have higher 𝛃 diversity, this did not translate into higher 𝛾 diversity. Our findings refute claims that habitat fragmentation can increase biodiversity at landscape-scales and emphasise the need to restore habitat and increasing connectivity, in order to minimise biodiversity loss at ever increasing scales.
 
 ## Directory Structure
 
@@ -35,14 +36,14 @@ The project is organized as follows:
 - Engel_novel_code.R        # Relevant functional to calculate beta diversity (coverage based) from Engel et al. 2021, Ecosphere, https://doi.org/10.1002/ecs2.3745
 - biod_loss_frag.Rproj      # R project file 
 - renv.lock                 # Lock file for R environment
-- utility_functions.R       # Utility functions used across scripts (it was specified when needed across the scripts 01 to 08)
+- utility_functions.R       # Utility functions used across scripts, specified as needed in scripts 01 to 08
 ```
 
 ## Requirements
 
 To run these scripts, you'll need:
 
-- R and RStudio installed on your computer
+- R <https://cran.r-project.org/> and RStudio <https://posit.co/download/rstudio-desktop/> installed on your computer
 - Packages defined in the `renv.lock` file
 - Any additional software or dependencies required should be installed
 - You must run the scripts from 01 to 08 to make sure all required files are created.
