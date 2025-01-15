@@ -1,6 +1,6 @@
 # ==============================================================================
 # Data Analysis for Gonçalves-Souza et al. Increasing species turnover does not alleviate biodiversity loss in fragmented landscapes
-# Analysis: Estimate alpha diversity based on study design
+# Analysis: # Analysis: Estimate pairwise diversity using q = 0 and q = 2 (all pairs and nearest pairs) with a coverage based approach
 # Author: Thiago Gonçalves Souza
 # Date: [October 10, 2024]
 # Notes: R version 4.4.1 [2024-06-14 ucrt]
