@@ -20,22 +20,22 @@ This is the repository with data and scripts to replicate all analyses run in th
 The project is organized as follows:
 
 ```
-- figures/                  # Contains figure files for the project
-- processed_data/           # Folder for processed datasets
+- figures/                  # Contains the outputs of Figures 2 and 3
+- processed_data/           # Folder for processed datasets after running analyses such as rarefaction
 - renv/                     # Directory for R environment configurations
-- results/                  # Generated results files
-- 01_study_design.R         # Script for setting up the study design
-- 02_pairwise_div_all.R     # Script for pairwise diversity calculations (all)
-- 03_pairwise_div_near.R    # Script for pairwise diversity calculations (near)
-- 04_pairwise_div_raref.R   # Script for rarefaction diversity calculations
-- 05_pairwise_div_raref_samp_cov.R # Further diversity analysis with sampling coverage
-- 06_figures.R              # Script for generating figures
-- 07_glmm.R                 # Script for Generalized Linear Mixed Models
-- 08_meta_analysis.R        # Script for performing meta-analysis
-- Engel_novel_code.R        # Novel code specific to Engel study
-- biod_loss_frag.Rproj      # R project file for the study
+- results/                  # Summary and relevant results files
+- 01_study_design.R         # Script for estimating alpha diversity based on study design
+- 02_pairwise_div_all.R     # Script for estimating pairwise diversity (psd) using all plot pairs
+- 03_pairwise_div_near.R    # Script for estimating pairwise diversity (psd) using the nearest plot pairs
+- 04_pairwise_div_raref.R   # Script for estimating pairwise diversity (psd) using q = 0 and 2 (all pairs and nearest pairs)
+- 05_pairwise_div_raref_samp_cov.R # Further rarefaction analysis to estimate pairwise diversity with a coverage based approach
+- 06_figures.R              # Script for generating figures 2 and 3
+- 07_glmm.R                 # Script for GLMMs to test the effects of landscape type on species diversity
+- 08_meta_analysis.R        # Script for performing meta-analysis to test the effects of landscape type on species diversity
+- Engel_novel_code.R        # Relevant functional to calculate beta diversity (coverage based) from Engel et al. 2021, Ecosphere, https://doi.org/10.1002/ecs2.3745
+- biod_loss_frag.Rproj      # R project file 
 - renv.lock                 # Lock file for R environment
-- utility_functions.R       # Utility functions used across scripts
+- utility_functions.R       # Utility functions used across scripts (it was specified when needed across the scripts 01 to 08)
 ```
 
 ## Requirements
@@ -45,10 +45,11 @@ To run these scripts, you'll need:
 - R and RStudio installed on your computer
 - Packages defined in the `renv.lock` file
 - Any additional software or dependencies required should be installed
+- You must run the scripts from 01 to 08 to make sure all required files are created.
 
 ## Usage
 
-Instructions on how to replicate the results, including any installation commands or setup steps necessary for reproducing the analysis.
+You may want to download this repository (and associated R Project) to fully reproduce the scripts. All required packages and explanations for the usage can be run on each scripts, number from 01 (01_study_design.R) to 08 (08_meta_analysis.R). All required data is available in the folders data and processed_data. 
 
 1. Clone the repository:
 
@@ -73,29 +74,20 @@ Instructions on how to replicate the results, including any installation command
 
 ## Scripts Description
 
-- **01_study_design.R**: Sets up the experimental design and initial parameters.
-- **02_pairwise_div_all.R**: Computes pairwise diversity across the entire dataset.
-- **03_pairwise_div_near.R**: Calculates pairwise diversity for nearby elements.
-- **04_pairwise_div_raref.R**: Conducts rarefaction analyses.
-- **05_pairwise_div_raref_samp_cov.R**: Incorporates sampling coverage in rarefaction.
-- **06_figures.R**: Generates and saves plots and visualizations.
-- **07_glmm.R**: Performs analyses using generalized linear mixed models.
-- **08_meta_analysis.R**: Conducts meta-analysis using compiled data.
-- **Engel_novel_code.R**: Contains novel methodologies developed during the Engel study.
-- **utility_functions.R**: Supports all R scripts with reusable functions.
+- **01_study_design.R**: Estimates alpha diversity based on study design
+- **02_pairwise_div_all.R**: Estimates pairwise diversity (psd) using all plot pairs
+- **03_pairwise_div_near.R**: Estimates pairwise diversity (psd) using the nearest plot pairs
+- **04_pairwise_div_raref.R**: Estimates pairwise diversity (psd) using q = 0 and 2 (all pairs and nearest pairs)
+- **05_pairwise_div_raref_samp_cov.R**: Further rarefaction analysis to estimate pairwise diversity with a coverage based approach
+- **06_figures.R**: Generates figures 2 and 3
+- **07_glmm.R**: Runs GLMMs to test the effects of landscape type on species diversity
+- **08_meta_analysis.R**: Runs meta-analysis to test the effects of landscape type on species diversity
 
 ## Figures and Results
 
 Images and results generated from the `06_figures.R` and other relevant scripts can be found in the `figures/` and `results/` directories.
 
-## Acknowledgments
-
-Acknowledge any collaborators, institutions, or repositories you leveraged during this project.
-
 ## License
 
-Specify the license for the project, e.g., MIT License. Provide a link to the full license text if applicable.
-
+CC-BY-4.0 License
 ---
-
-This is a basic template for your `README.md`. Be sure to fill in specific details for each section to make the documentation useful to other users and collaborators.
