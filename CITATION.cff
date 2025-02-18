@@ -1,0 +1,10 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: Thiago
+  given-names: Gonçalves-Souza
+orcid: https://orcid.org/0000-0001-8471-7479
+title: Data and Code for Gonçalves-Souza et al., Nature, Species turnover does not rescue   biodiversity in fragmented landscapes, https://doi.org/10.1038/s41586-025-08688-7
+zenodo DOI: 10.5281/zenodo.14885581
+version: 0.1.0
+date-released: 2025-02-18
